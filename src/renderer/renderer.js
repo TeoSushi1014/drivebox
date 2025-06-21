@@ -13,6 +13,7 @@ class DriveBoxApp {
         await this.loadApps();
         this.setupEventListeners();
         this.setupProgressListener();
+        this.setupContactFooter();
         this.setupAutoUpdate();
         this.updateStatusBar(`Ready - Download folder: ${this.downloadFolder}`);
     }
@@ -1099,19 +1100,62 @@ class DriveBoxApp {
                 `Some download control features may not work: ${missingOptional.join(', ')}` : 
                 'All functions available'
         };
-    }    // Auto-Update System Setup
+    }    // Contact Footer Setup
+    setupContactFooter() {
+        // Handle footer contact links
+        const contactLinks = document.querySelectorAll('.contact-link');
+        contactLinks.forEach(link => {
+            link.addEventListener('click', (e) => {
+                if (link.href.startsWith('https://zalo.me/')) {
+                    // For Zalo, just open the link
+                    e.preventDefault();
+                    window.open(link.href, '_blank');
+                    this.showToast('Mở Zalo...', 'info');
+                } else {
+                    this.showToast('Mở liên kết...', 'info');
+                }
+                // Other links will open normally
+            });
+        });
+
+        // Setup footer update check button
+        const checkUpdatesFooterBtn = document.getElementById('checkUpdatesFooterBtn');
+        if (checkUpdatesFooterBtn) {
+            checkUpdatesFooterBtn.addEventListener('click', () => {
+                this.checkForUpdates();
+                this.showToast('Kiểm tra cập nhật...', 'info');
+            });
+        }
+
+        // Update footer version display
+        this.updateFooterVersion();
+    }
+
+    // Update footer version display
+    async updateFooterVersion() {
+        try {
+            const version = await window.electronAPI.getAppVersion();
+            const footerVersion = document.getElementById('footerVersion');
+            if (footerVersion) {
+                footerVersion.textContent = version;
+            }        } catch (error) {
+            console.error('Failed to update footer version:', error);
+        }
+    }
+
+    // Auto-Update System Setup
     async setupAutoUpdate() {
         try {
             // Get and display current version
             const version = await window.electronAPI.getAppVersion();
             const versionBadge = document.getElementById('versionBadge');
-            const appVersionFooter = document.getElementById('appVersionFooter');
+            const appVersionSpan = document.getElementById('appVersion');
             
             if (versionBadge) {
                 versionBadge.textContent = `v${version}`;
             }
-            if (appVersionFooter) {
-                appVersionFooter.textContent = `DriveBox v${version}`;
+            if (appVersionSpan) {
+                appVersionSpan.textContent = version;
             }
 
             // Setup check updates button
@@ -1119,9 +1163,6 @@ class DriveBoxApp {
             if (checkUpdatesBtn) {
                 checkUpdatesBtn.addEventListener('click', () => this.checkForUpdates());
             }
-
-            // Setup contact links in footer
-            this.setupContactLinks();
 
             // Auto-check for updates on startup (after a delay)
             setTimeout(() => {
@@ -1131,26 +1172,6 @@ class DriveBoxApp {
         } catch (error) {
             console.error('Auto-update setup failed:', error);
         }
-    }
-
-    // Setup Contact Links in Footer
-    setupContactLinks() {
-        const contactLinks = document.querySelectorAll('.contact-link');
-        contactLinks.forEach(link => {
-            link.addEventListener('click', (e) => {
-                if (link.href.startsWith('https://zalo.me/')) {
-                    // For Zalo, just open the link
-                    e.preventDefault();
-                    window.open(link.href, '_blank');
-                    this.showToast('Đang mở Zalo...', 'info');
-                } else if (link.href.includes('facebook.com')) {
-                    this.showToast('Đang mở Facebook...', 'info');
-                } else if (link.href.includes('github.com')) {
-                    this.showToast('Đang mở GitHub...', 'info');
-                }
-                // Other links will open normally
-            });
-        });
     }
 
     // Check for Updates
