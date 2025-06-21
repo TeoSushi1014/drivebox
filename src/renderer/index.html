@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html                    <span class="version-badge clickable" id="versionBadge" title="DriveBox Version">v1.1.0</span>lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DriveBox - App Installer & Updater</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Animated Background -->
+    <div class="background-particles">
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+    </div>
+
+    <div class="container">        <header class="header">
+            <div>                <h1>
+                    <div class="app-icon">D</div>
+                    DriveBox
+                    <span class="version-badge clickable" id="versionBadge" title="Nhấp để xem thông tin liên hệ & cập nhật">v1.0.0</span>
+                </h1>                <p>App Installer & Updater (Portable)</p>
+            </div><div class="header-actions">
+                <button type="button" class="refresh-button" id="refreshBtn">
+                    <span class="refresh-button__text">Refresh</span>
+                    <span class="refresh-button__icon">
+                        <svg class="refresh-svg" height="48" viewBox="0 0 48 48" width="48" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M35.3 12.7c-2.89-2.9-6.88-4.7-11.3-4.7-8.84 0-15.98 7.16-15.98 16s7.14 16 15.98 16c7.45 0 13.69-5.1 15.46-12h-4.16c-1.65 4.66-6.07 8-11.3 8-6.63 0-12-5.37-12-12s5.37-12 12-12c3.31 0 6.28 1.38 8.45 3.55l-6.45 6.45h14v-14l-4.7 4.7z"></path>
+                            <path d="M0 0h48v48h-48z" fill="none"></path>
+                        </svg>
+                    </span>
+                </button>
+                <button id="themeToggle" class="theme-toggle">
+                    🌙 Dark
+                </button>
+            </div>
+        </header>        <main class="main">
+            <div class="apps-grid" id="appsGrid">
+                <!-- Apps will be loaded here -->
+            </div>
+        </main>
+
+        <!-- Contact Footer Panel - Always Visible -->
+        <footer class="contact-footer">
+            <div class="contact-footer-content">
+                <div class="contact-info-grid">
+                    <div class="contact-item-footer">
+                        <span class="contact-icon">📱</span>
+                        <div class="contact-details">
+                            <span class="contact-label">Zalo</span>
+                            <a href="https://zalo.me/0838696697" class="contact-link">0838 696 697</a>
+                        </div>
+                    </div>
+                    <div class="contact-item-footer">
+                        <span class="contact-icon">📘</span>
+                        <div class="contact-details">
+                            <span class="contact-label">Facebook</span>
+                            <a href="https://www.facebook.com/boboiboy.gala.7/" class="contact-link" target="_blank">boboiboy.gala.7</a>
+                        </div>
+                    </div>
+                    <div class="contact-item-footer">
+                        <span class="contact-icon">🐙</span>
+                        <div class="contact-details">
+                            <span class="contact-label">GitHub</span>
+                            <a href="https://github.com/TeoSushi1014/" class="contact-link" target="_blank">TeoSushi1014</a>
+                        </div>
+                    </div>
+                    <div class="contact-item-footer">
+                        <span class="contact-icon">🚗</span>
+                        <div class="contact-details">
+                            <span class="contact-label">Project</span>
+                            <a href="https://github.com/TeoSushi1014/quizdrive" class="contact-link" target="_blank">QuizDrive</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="app-version-footer">
+                    <span id="appVersionFooter">DriveBox v1.1.0</span>
+                    <button id="checkUpdatesBtn" class="btn-footer">Kiểm tra cập nhật</button>
+                    <div id="updateStatus" class="update-status"></div>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- App Card Template -->
+    <template id="appCardTemplate">
+        <div class="app-card">
+            <div class="app-icon">
+                <img src="" alt="App Icon" class="app-icon-img">
+            </div>
+            <div class="app-info">
+                <h3 class="app-name"></h3>
+                <p class="app-description"></p>
+                <div class="app-version">
+                    <span class="version-label">Version:</span>
+                    <span class="version-number"></span>
+                </div>
+                <div class="app-status">
+                    <span class="status-badge"></span>
+                </div>
+            </div>            <div class="app-actions">
+                <button class="btn btn-primary action-btn download-btn" data-action="install">
+                    <svg viewBox="0 0 256 256" height="32" width="38" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M74.34 85.66a8 8 0 0 1 11.32-11.32L120 108.69V24a8 8 0 0 1 16 0v84.69l34.34-34.35a8 8 0 0 1 11.32 11.32l-48 48a8 8 0 0 1-11.32 0ZM240 136v64a16 16 0 0 1-16 16H32a16 16 0 0 1-16-16v-64a16 16 0 0 1 16-16h52.4a4 4 0 0 1 2.83 1.17L111 145a24 24 0 0 0 34 0l23.8-23.8a4 4 0 0 1 2.8-1.2H224a16 16 0 0 1 16 16m-40 32a12 12 0 1 0-12 12a12 12 0 0 0 12-12" fill="currentColor"></path>
+                    </svg>
+                    Download
+                </button>
+                <button class="btn btn-success action-btn hidden" data-action="open">
+                    🚀 Open
+                </button>
+                <button class="btn btn-info action-btn hidden" data-action="open-folder">
+                    📂 Open Folder
+                </button>
+                <button class="btn btn-warning action-btn hidden" data-action="update">
+                    🔄 Update
+                </button>
+                <button class="btn btn-danger action-btn hidden" data-action="uninstall">
+                    🗑️ Uninstall
+                </button>            </div>
+        </div>
+    </template>    <!-- Modern Download Progress Bar like Chrome -->
+    <div class="download-progress-container" id="downloadProgressContainer">
+        <div class="download-item" id="downloadItem">
+            <div class="download-item-content">
+                <!-- File Info -->
+                <div class="download-file-info">                    <div class="download-file-icon">
+                        📄
+                    </div>
+                    <div class="download-file-details">              <div class="download-file-name" id="downloadFileName">Không có tải xuống</div>
+              <div class="download-file-status" id="downloadFileStatus">Sẵn sàng</div>
+                    </div>
+                </div>
+                
+                <!-- Progress Bar -->
+                <div class="download-progress-bar">
+                    <div class="download-progress-track">
+                        <div class="download-progress-fill" id="downloadProgressFill"></div>
+                    </div>
+                    <div class="download-progress-text" id="downloadProgressText">0%</div>
+                </div>
+                  <!-- Download Actions -->
+                <div class="download-actions">
+                    <button class="download-action-btn pause-btn" id="pauseBtn" data-action="pause" title="Tạm dừng" onclick="event.stopPropagation();">
+                        ⏸
+                    </button>
+                    <button class="download-action-btn resume-btn" id="resumeBtn" data-action="resume" title="Tiếp tục" style="display: none;" onclick="event.stopPropagation();">
+                        ▶️
+                    </button>
+                    <button class="download-action-btn cancel-btn" id="cancelBtn" data-action="cancel" title="Hủy" onclick="event.stopPropagation();">
+                        ❌
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>    <!-- Modal for app details -->
+    <div id="appModal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2 id="modalTitle"></h2>
+            <div id="modalBody"></div>
+        </div>
+    </div>
+
+    <script src="renderer.js"></script>
+</body>
+</html>
