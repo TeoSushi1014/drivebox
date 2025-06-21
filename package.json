@@ -1,12 +1,15 @@
 {  "name": "drivebox",
   "version": "1.1.0",
   "description": "Electron App Installer & Updater (Portable) with Auto-Update & Contact Support",
-  "main": "src/main.js",
-  "scripts": {
+  "main": "src/main.js",  "scripts": {
     "start": "electron .",
     "dev": "electron . --dev",
     "build": "electron-builder",
-    "dist": "electron-builder --publish=never"
+    "dist": "electron-builder --publish=never",    "test": "mocha tests/unit/*.test.js --timeout 10000",
+    "lint": "eslint src/ --ext .js",
+    "format": "prettier --write src/",
+    "security-check": "npm audit --audit-level moderate",
+    "clean": "rimraf dist/ build/ node_modules/.cache"
   },
   "keywords": [
     "electron",
@@ -15,15 +18,28 @@
     "portable"
   ],
   "author": "DriveBox Team",
-  "license": "MIT",
-  "devDependencies": {
+  "license": "MIT",  "devDependencies": {
     "electron": "^28.0.0",
-    "electron-builder": "^24.0.0"
+    "electron-builder": "^24.0.0",
+    "mocha": "^10.2.0",
+    "chai": "^4.3.10",
+    "eslint": "^8.56.0",
+    "prettier": "^3.1.1",
+    "rimraf": "^5.0.5"
   },  "dependencies": {
     "electron-store": "^8.1.0",
     "node-fetch": "^2.7.0",
     "extract-zip": "^2.0.1",
-    "open": "^8.4.2"
+    "open": "^8.4.2",
+    "dropbox": "^10.34.0",
+    "googleapis": "^128.0.0",
+    "chokidar": "^3.5.3",
+    "fs-extra": "^11.1.1",
+    "semver": "^7.5.4",
+    "axios": "^1.6.0",
+    "winston": "^3.11.0",
+    "node-rsa": "^1.1.1",
+    "bcryptjs": "^2.4.3"
   },
   "build": {
     "appId": "com.drivebox.installer",
