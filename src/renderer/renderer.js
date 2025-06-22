@@ -10,6 +10,7 @@ class DriveBoxApp {
         this.init();
     }    async init() {
         this.initTheme();
+        await this.updateFooterVersion(); // Update version display early
         await this.loadApps();
         this.setupEventListeners();
         this.setupProgressListener();
@@ -1133,16 +1134,20 @@ class DriveBoxApp {
 
         // Update footer version display
         this.updateFooterVersion();
-    }
-
-    // Update footer version display
+    }    // Update footer version display
     async updateFooterVersion() {
         try {
             const version = await window.electronAPI.getAppVersion();
             const footerVersion = document.getElementById('footerVersion');
+            const versionBadge = document.getElementById('versionBadge');
+            
             if (footerVersion) {
                 footerVersion.textContent = version;
-            }        } catch (error) {
+            }
+            if (versionBadge) {
+                versionBadge.textContent = `v${version}`;
+            }
+        } catch (error) {
             console.error('Failed to update footer version:', error);
         }
     }
