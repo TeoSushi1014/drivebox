@@ -43,9 +43,7 @@ class DriveBoxApp {    constructor() {
         if (themeToggle) {
             themeToggle.innerHTML = this.currentTheme === 'light' ? '🌙 Dark' : '☀️ Light';
         }
-    }
-
-    setupProgressListener() {
+    }    setupProgressListener() {
         // Listen for download progress updates
         window.electronAPI.onDownloadProgress((data) => {
             if (data.progress !== undefined) {
@@ -62,7 +60,25 @@ class DriveBoxApp {    constructor() {
                 }, 1000);
             }
         });
-    }    updateEnhancedProgressBar(data) {
+        
+        // Listen for update download progress if available
+        if (window.electronAPI.onUpdateDownloadProgress) {
+            window.electronAPI.onUpdateDownloadProgress((data) => {
+                console.log('Update download progress:', data);
+                
+                // Use the same progress bar for update downloads
+                if (data.progress !== undefined) {
+                    this.updateEnhancedProgressBar({
+                        ...data,
+                        appName: `Cập nhật v${data.version || 'mới'}`,
+                        message: data.message || `Đang tải cập nhật... ${data.progress}%`
+                    });
+                }
+                
+                this.updateStatusBar(data.message || `🔄 Đang tải cập nhật... ${data.progress || 0}%`);
+            });
+        }
+    }updateEnhancedProgressBar(data) {
         try {
             const progressContainer = document.getElementById('downloadProgressContainer');
             const progressFill = document.getElementById('downloadProgressFill');
@@ -1224,18 +1240,31 @@ class DriveBoxApp {    constructor() {
                       // Add event listeners for the new buttons
                     setTimeout(() => {
                         const downloadBtn = document.getElementById('downloadUpdateBtn');
-                        const releaseNotesBtn = document.getElementById('viewReleaseNotesBtn');
-                          if (downloadBtn) {
+                        const releaseNotesBtn = document.getElementById('viewReleaseNotesBtn');                        if (downloadBtn) {
                             downloadBtn.addEventListener('click', (e) => {
                                 e.preventDefault();
                                 console.log('Download button clicked');
                                 
+                                // Disable button to prevent multiple clicks
+                                downloadBtn.disabled = true;
+                                downloadBtn.textContent = 'Đang tải xuống...';
+                                downloadBtn.style.opacity = '0.6';
+                                
                                 // Use stored updateInfo instead of parsing JSON
                                 if (this.currentUpdateInfo) {
-                                    this.downloadUpdate(this.currentUpdateInfo);
+                                    this.downloadUpdate(this.currentUpdateInfo).finally(() => {
+                                        // Re-enable button after download completes (success or fail)
+                                        downloadBtn.disabled = false;
+                                        downloadBtn.textContent = 'Tải xuống ngay';
+                                        downloadBtn.style.opacity = '1';
+                                    });
                                 } else {
                                     console.error('No update info available');
                                     this.showToast('Không thể tải cập nhật: Thiếu thông tin cập nhật', 'error');
+                                    // Re-enable button on error
+                                    downloadBtn.disabled = false;
+                                    downloadBtn.textContent = 'Tải xuống ngay';
+                                    downloadBtn.style.opacity = '1';
                                 }
                             });
                         }
@@ -1403,14 +1432,30 @@ class DriveBoxApp {    constructor() {
         // Update toast disabled - showing only status bar notification
         console.log('Update notification:', notification);
         return;
-    }
-
-    // Download Update
+    }    // Download Update
     async downloadUpdate(updateInfo) {
         try {
             console.log('Starting app update download:', updateInfo);
             this.showToast('🔄 Đang bắt đầu tải xuống cập nhật...', 'info');
             this.updateStatusBar(`🔄 Đang tải xuống cập nhật v${updateInfo.latestVersion}...`);
+            
+            // Show progress bar for update download
+            const progressContainer = document.getElementById('downloadProgressContainer');
+            const fileName = document.getElementById('downloadFileName');
+            const fileStatus = document.getElementById('downloadFileStatus');
+            
+            if (progressContainer) progressContainer.classList.add('active');
+            if (fileName) fileName.textContent = `Cập nhật DriveBox v${updateInfo.latestVersion}`;
+            if (fileStatus) fileStatus.textContent = 'Đang khởi tạo tải xuống cập nhật...';
+            
+            // Set downloading state for progress bar
+            this.isDownloading = true;
+            this.currentDownload = { 
+                app: { 
+                    name: `Cập nhật v${updateInfo.latestVersion}`, 
+                    id: 'app-update' 
+                } 
+            };
             
             // Check if the electronAPI method exists
             if (!window.electronAPI || typeof window.electronAPI.downloadAppUpdate !== 'function') {
@@ -1420,8 +1465,23 @@ class DriveBoxApp {    constructor() {
             const result = await window.electronAPI.downloadAppUpdate(updateInfo);
             
             if (result && result.success) {
+                // Update progress to 100%
+                const progressFill = document.getElementById('downloadProgressFill');
+                const progressText = document.getElementById('downloadProgressText');
+                
+                if (progressFill) progressFill.style.width = '100%';
+                if (progressText) progressText.textContent = '100%';
+                if (fileStatus) fileStatus.textContent = 'Tải xuống cập nhật hoàn tất';
+                
                 this.showToast(`✅ Cập nhật v${updateInfo.latestVersion} đã tải xong! Khởi động lại để cài đặt`, 'success');
                 this.updateStatusBar(`✅ Cập nhật v${updateInfo.latestVersion} sẵn sàng - Khởi động lại để cài đặt`);
+                
+                // Hide progress bar after showing completion
+                setTimeout(() => {
+                    if (progressContainer) {
+                        progressContainer.classList.remove('active');
+                    }
+                }, 3000);
                 
                 // Show restart prompt
                 setTimeout(() => {
@@ -1438,6 +1498,18 @@ class DriveBoxApp {    constructor() {
             console.error('Update download failed:', error);
             this.showToast(`❌ Lỗi tải cập nhật: ${error.message}`, 'error');
             this.updateStatusBar(`❌ Tải cập nhật thất bại: ${error.message}`);
+            
+            // Hide progress bar on error
+            const progressContainer = document.getElementById('downloadProgressContainer');
+            if (progressContainer) {
+                setTimeout(() => {
+                    progressContainer.classList.remove('active');
+                }, 2000);
+            }
+        } finally {
+            // Reset downloading state
+            this.isDownloading = false;
+            this.currentDownload = null;
         }
     }
 
