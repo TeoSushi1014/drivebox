@@ -1026,34 +1026,9 @@ class DriveBoxApp {
         if (pauseBtn) pauseBtn.style.display = 'none';
         if (resumeBtn) resumeBtn.style.display = 'flex';
     }    showToast(message, type = 'info') {
-        // Remove existing toast if any
-        const existingToast = document.querySelector('.toast-notification');
-        if (existingToast) {
-            existingToast.remove();
-        }
-        
-        // Create new toast
-        const toast = document.createElement('div');
-        toast.className = `toast-notification ${type}`;
-        toast.textContent = message;
-        
-        // Add to DOM
-        document.body.appendChild(toast);
-        
-        // Show toast
-        setTimeout(() => {
-            toast.classList.add('show');
-        }, 100);
-        
-        // Auto hide after 3 seconds
-        setTimeout(() => {
-            toast.classList.remove('show');
-            setTimeout(() => {
-                if (toast.parentNode) {
-                    toast.parentNode.removeChild(toast);
-                }
-            }, 300);
-        }, 3000);
+        // Toast notifications disabled - logging to console instead
+        console.log(`Toast (${type}):`, message);
+        return;
     }
 
     // Helper method to check if electronAPI functions are available
@@ -1351,67 +1326,11 @@ class DriveBoxApp {
         
         // Show in status bar
         this.updateStatusBar(`🔔 Update available: v${updateInfo.latestVersion} - Click to download`);
-    }
-
-    // Show detailed update toast
+    }    // Show detailed update toast
     showDetailedUpdateToast(notification) {
-        // Remove existing update toast if any
-        const existingUpdateToast = document.querySelector('.update-toast');
-        if (existingUpdateToast) {
-            existingUpdateToast.remove();
-        }
-        
-        // Create detailed update toast
-        const toast = document.createElement('div');
-        toast.className = 'update-toast toast-notification success';
-        toast.innerHTML = `
-            <div class="update-toast-content">
-                <div class="update-toast-header">
-                    <span class="update-icon">🔔</span>
-                    <strong>${notification.title}</strong>
-                </div>
-                <div class="update-toast-body">
-                    <div class="update-message">${notification.message}</div>
-                    <div class="update-details">${notification.details}</div>
-                </div>
-                <div class="update-toast-actions">
-                    <button class="update-action-btn download-update" onclick="app.handleUpdateDownload()">
-                        Tải xuống ngay
-                    </button>
-                    <button class="update-action-btn dismiss-update" onclick="this.closest('.update-toast').remove()">
-                        Để sau
-                    </button>
-                </div>
-            </div>
-        `;
-        
-        // Add custom styles
-        toast.style.cssText = `
-            max-width: 400px;
-            padding: 16px;
-            border-left: 4px solid #4CAF50;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        `;
-        
-        // Add to DOM
-        document.body.appendChild(toast);
-        
-        // Show toast
-        setTimeout(() => {
-            toast.classList.add('show');
-        }, 100);
-        
-        // Auto hide after 10 seconds (longer for update notifications)
-        setTimeout(() => {
-            if (toast.parentNode && !toast.querySelector('.download-update:hover')) {
-                toast.classList.remove('show');
-                setTimeout(() => {
-                    if (toast.parentNode) {
-                        toast.parentNode.removeChild(toast);
-                    }
-                }, 300);
-            }
-        }, 10000);
+        // Update toast disabled - showing only status bar notification
+        console.log('Update notification:', notification);
+        return;
     }
 
     // Handle update download from toast

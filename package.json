@@ -9,7 +9,8 @@
     "lint": "eslint src/ --ext .js",
     "format": "prettier --write src/",
     "security-check": "npm audit --audit-level moderate",
-    "clean": "rimraf dist/ build/ node_modules/.cache"
+    "clean": "rimraf dist/ build/ node_modules/.cache",
+    "build:css": "node build-css.js"
   },
   "keywords": [
     "electron",
