@@ -37,6 +37,44 @@ if (process.platform === 'win32') {
 // Initialize electron-store
 const store = new Store();
 
+// Cleanup function for update files
+function cleanupUpdateFiles() {
+  try {
+    // Clean up temp update files
+    const tempDir = path.join(os.tmpdir(), 'drivebox-update');
+    if (fs.existsSync(tempDir)) {
+      fs.rmSync(tempDir, { recursive: true, force: true });
+      console.log('Cleaned up temp update files');
+    }
+    
+    // Clean up any backup files older than 24 hours
+    const currentDir = path.dirname(process.execPath);
+    const files = fs.readdirSync(currentDir);
+    const backupPattern = /DriveBox-backup-(\d+)\.exe$/;
+    
+    files.forEach(file => {
+      const match = file.match(backupPattern);
+      if (match) {
+        const timestamp = parseInt(match[1]);
+        const age = Date.now() - timestamp;
+        const twentyFourHours = 24 * 60 * 60 * 1000;
+        
+        if (age > twentyFourHours) {
+          const filePath = path.join(currentDir, file);
+          try {
+            fs.unlinkSync(filePath);
+            console.log('Cleaned up old backup file:', file);
+          } catch (err) {
+            console.warn('Could not clean up backup file:', file, err.message);
+          }
+        }
+      }
+    });
+  } catch (error) {
+    console.warn('Cleanup failed:', error.message);
+  }
+}
+
 // Helper function to read apps.json with proper path resolution
 function getAppsData() {
   try {
@@ -224,11 +262,13 @@ app.whenReady().then(() => {
   console.log('App path:', app.getAppPath());
   console.log('Is packaged:', app.isPackaged);
   
+  // Cleanup any leftover update files
+  cleanupUpdateFiles();
+  
   // Test loading apps data on startup
   const appsData = getAppsData();
   console.log(`Loaded ${appsData.length} apps from configuration`);
-  
-  createWindow();
+    createWindow();
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
@@ -2175,8 +2215,6 @@ ipcMain.handle('check-app-updates', async () => {
     const currentVersion = app.getVersion();
     console.log('Checking for updates, current version:', currentVersion);
     
-    // Allow update check in development mode
-    
     const response = await fetch('https://api.github.com/repos/TeoSushi1014/drivebox/releases/latest', {
       headers: {
         'User-Agent': 'DriveBox-App',
@@ -2185,7 +2223,6 @@ ipcMain.handle('check-app-updates', async () => {
     });
     
     if (!response.ok) {
-      // Handle different HTTP status codes
       if (response.status === 403) {
         console.warn('GitHub API rate limit exceeded or access denied');
         return { 
@@ -2210,7 +2247,7 @@ ipcMain.handle('check-app-updates', async () => {
     const latestVersion = latestRelease.tag_name.replace('v', '');
     
     console.log('Latest version from GitHub:', latestVersion);
-      return {
+    return {
       hasUpdate: latestVersion !== currentVersion,
       currentVersion,
       latestVersion: latestRelease.tag_name,
@@ -2218,10 +2255,10 @@ ipcMain.handle('check-app-updates', async () => {
       fileSize: latestRelease.assets[0]?.size || 0,
       fileName: latestRelease.assets[0]?.name || 'DriveBox-Setup.exe',
       releaseNotes: latestRelease.body || 'No release notes available'
-    };} catch (error) {
+    };
+  } catch (error) {
     console.error('Update check failed:', error);
     
-    // More specific error handling
     if (error.message.includes('403')) {
       return { 
         hasUpdate: false, 
@@ -2244,29 +2281,6 @@ ipcMain.handle('check-app-updates', async () => {
   }
 });
 
-// Helper function to calculate download speed
-let downloadStartTime = null;
-function calculateDownloadSpeed(downloadedBytes) {
-  if (!downloadStartTime) {
-    downloadStartTime = Date.now();
-    return 0;
-  }
-  
-  const elapsedTime = (Date.now() - downloadStartTime) / 1000; // in seconds
-  if (elapsedTime === 0) return 0;
-  
-  const bytesPerSecond = downloadedBytes / elapsedTime;
-  
-  // Convert to appropriate unit
-  if (bytesPerSecond < 1024) {
-    return `${Math.round(bytesPerSecond)} B/s`;
-  } else if (bytesPerSecond < 1024 * 1024) {
-    return `${Math.round(bytesPerSecond / 1024)} KB/s`;
-  } else {
-    return `${Math.round(bytesPerSecond / (1024 * 1024))} MB/s`;
-  }
-}
-
 // Download and install update
 ipcMain.handle('download-app-update', async (event, updateInfo) => {
   try {
@@ -2274,9 +2288,6 @@ ipcMain.handle('download-app-update', async (event, updateInfo) => {
       throw new Error('No download URL provided');
     }
     console.log('Starting app update download...');
-    
-    // Reset download start time for accurate speed calculation
-    downloadStartTime = null;
     
     // Create temp directory for update
     const tempDir = path.join(os.tmpdir(), 'drivebox-update');
@@ -2286,61 +2297,6 @@ ipcMain.handle('download-app-update', async (event, updateInfo) => {
     const fileName = `drivebox-${updateInfo.latestVersion}.exe`;
     const filePath = path.join(tempDir, fileName);
     
-    // Format release notes (Markdown to HTML) first
-    let formattedReleaseNotes = updateInfo.releaseNotes || 'No release notes available.';
-    try {
-      // Enhanced Markdown to HTML conversion
-      formattedReleaseNotes = formattedReleaseNotes
-        .replace(/\r\n|\r/g, '\n')
-        .replace(/\n{3,}/g, '\n\n')
-        // Headers
-        .replace(/^###\s(.+)$/gm, '<h3>$1</h3>')
-        .replace(/^##\s(.+)$/gm, '<h2>$1</h2>')
-        .replace(/^#\s(.+)$/gm, '<h1>$1</h1>')
-        // Bold and italic
-        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-        .replace(/\*(.+?)\*/g, '<em>$1</em>')
-        // Code blocks
-        .replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>')
-        .replace(/`([^`]+)`/g, '<code>$1</code>')
-        // Lists
-        .replace(/^\s*-\s(.+)$/gm, '<li>$1</li>')
-        .replace(/^\s*\*\s(.+)$/gm, '<li>$1</li>')
-        .replace(/^\s*\d+\.\s(.+)$/gm, '<li>$1</li>')
-        // Links
-        .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>')
-        // Paragraphs
-        .replace(/\n\n/g, '</p><p>')
-        .replace(/\n/g, '<br>');
-      
-      // Wrap consecutive list items in ul tags
-      formattedReleaseNotes = formattedReleaseNotes.replace(/(<li>.*<\/li>)/gs, (match) => {
-        return `<ul>${match}</ul>`;
-      });
-      
-      // Clean up nested ul tags
-      formattedReleaseNotes = formattedReleaseNotes.replace(/<\/ul>\s*<ul>/g, '');
-      
-      // Wrap in paragraph if not already wrapped
-      if (!formattedReleaseNotes.startsWith('<') && !formattedReleaseNotes.includes('</')) {
-        formattedReleaseNotes = `<p>${formattedReleaseNotes}</p>`;
-      } else if (!formattedReleaseNotes.startsWith('<p>') && !formattedReleaseNotes.startsWith('<h')) {
-        formattedReleaseNotes = `<p>${formattedReleaseNotes}</p>`;
-      }
-    } catch (e) {
-      console.warn('Release notes formatting failed:', e);
-      formattedReleaseNotes = `<p>${updateInfo.releaseNotes || 'No release notes available.'}</p>`;
-    }
-    
-    // Send formatted release notes to renderer immediately for display
-    if (mainWindow && mainWindow.webContents) {
-      mainWindow.webContents.send('show-release-notes', {
-        version: updateInfo.latestVersion,
-        notes: formattedReleaseNotes,
-        downloadUrl: updateInfo.downloadUrl
-      });
-    }
-    
     // Start download with progress tracking
     const response = await fetch(updateInfo.downloadUrl);
     if (!response.ok) {
@@ -2349,31 +2305,33 @@ ipcMain.handle('download-app-update', async (event, updateInfo) => {
     
     const contentLength = parseInt(response.headers.get('content-length'), 10);
     let downloadedBytes = 0;
+    let downloadStartTime = Date.now();
     
     const fileStream = fs.createWriteStream(filePath);
     
-    return new Promise((resolve, reject) => {      response.body.on('data', (chunk) => {
+    return new Promise((resolve, reject) => {
+      response.body.on('data', (chunk) => {
         downloadedBytes += chunk.length;
         
         // Send progress update to renderer
         if (contentLength && mainWindow && mainWindow.webContents) {
           const progress = Math.round((downloadedBytes / contentLength) * 100);
-          const speed = calculateDownloadSpeed(downloadedBytes);
+          
+          // Calculate speed
+          const elapsedTime = (Date.now() - downloadStartTime) / 1000;
+          const speed = elapsedTime > 0 ? Math.round(downloadedBytes / elapsedTime) : 0;
           
           // Calculate ETA
-          let eta = 0;
-          if (downloadStartTime && downloadedBytes > 0) {
-            const elapsedTime = (Date.now() - downloadStartTime) / 1000;
-            const avgSpeed = downloadedBytes / elapsedTime; // bytes per second
-            const remainingBytes = contentLength - downloadedBytes;
-            eta = avgSpeed > 0 ? Math.round(remainingBytes / avgSpeed) : 0;
-          }
+          const remainingBytes = contentLength - downloadedBytes;
+          const eta = speed > 0 ? Math.round(remainingBytes / speed) : 0;
           
           mainWindow.webContents.send('update-download-progress', {
             progress,
             downloadedBytes,
             totalBytes: contentLength,
-            speed,
+            speed: speed < 1024 ? `${speed} B/s` : 
+                   speed < 1024 * 1024 ? `${Math.round(speed / 1024)} KB/s` : 
+                   `${Math.round(speed / (1024 * 1024))} MB/s`,
             eta,
             version: updateInfo.latestVersion
           });
@@ -2383,7 +2341,7 @@ ipcMain.handle('download-app-update', async (event, updateInfo) => {
       response.body.pipe(fileStream);
       
       fileStream.on('finish', () => {
-        console.log('Update downloaded successfully');
+        console.log('Update downloaded successfully to:', filePath);
         
         // Final progress update
         if (mainWindow && mainWindow.webContents) {
@@ -2391,17 +2349,23 @@ ipcMain.handle('download-app-update', async (event, updateInfo) => {
             progress: 100,
             downloadedBytes,
             totalBytes: contentLength || downloadedBytes,
-            speed: 0,
+            speed: '0 B/s',
             version: updateInfo.latestVersion,
             completed: true
           });
         }
         
+        // Store the update file path for later installation
+        store.set('pendingUpdate', {
+          filePath: filePath,
+          version: updateInfo.latestVersion,
+          downloadedAt: new Date().toISOString()
+        });
+        
         resolve({ 
           success: true, 
           filePath: filePath,
-          message: 'Update downloaded successfully',
-          releaseNotes: formattedReleaseNotes,
+          message: 'Update downloaded successfully. Restart to install.',
           version: updateInfo.latestVersion
         });
       });
@@ -2440,8 +2404,76 @@ ipcMain.handle('get-app-version', async () => {
 ipcMain.handle('restart-app', async () => {
   try {
     console.log('Restarting application for update...');
-    app.relaunch();
-    app.exit(0);
+    
+    // Check if there's a pending update
+    const pendingUpdate = store.get('pendingUpdate');
+    
+    if (pendingUpdate && fs.existsSync(pendingUpdate.filePath)) {
+      console.log('Installing update from:', pendingUpdate.filePath);
+      
+      // Get current executable path
+      const currentExePath = process.execPath;
+      const currentDir = path.dirname(currentExePath);
+      const backupPath = path.join(currentDir, `DriveBox-backup-${Date.now()}.exe`);
+      
+      try {
+        // Create backup of current executable
+        fs.copyFileSync(currentExePath, backupPath);
+        console.log('Created backup at:', backupPath);
+        
+        // Create a batch script to handle the update
+        const batchScript = `
+@echo off
+echo Installing DriveBox update...
+timeout /t 2 /nobreak >nul
+taskkill /f /im "drivebox.exe" 2>nul
+taskkill /f /im "DriveBox.exe" 2>nul
+timeout /t 1 /nobreak >nul
+copy /Y "${pendingUpdate.filePath}" "${currentExePath}"
+if %errorlevel% equ 0 (
+    echo Update installed successfully
+    start "" "${currentExePath}"
+    del "${pendingUpdate.filePath}"
+    del "${backupPath}"
+) else (
+    echo Update failed, restoring backup
+    copy /Y "${backupPath}" "${currentExePath}"
+    del "${backupPath}"
+    start "" "${currentExePath}"
+)
+del "%~f0"
+`;
+        
+        const batchPath = path.join(currentDir, 'update-install.bat');
+        fs.writeFileSync(batchPath, batchScript);
+        
+        // Clear pending update from store
+        store.delete('pendingUpdate');
+        
+        // Execute the batch script and exit
+        const { spawn } = require('child_process');
+        spawn('cmd.exe', ['/c', batchPath], {
+          detached: true,
+          stdio: 'ignore'
+        });
+        
+        // Exit the current application
+        app.exit(0);
+        
+      } catch (updateError) {
+        console.error('Update installation failed:', updateError);
+        
+        // If update fails, just restart normally
+        app.relaunch();
+        app.exit(0);
+      }
+    } else {
+      // No update pending, just restart normally
+      console.log('No pending update, restarting normally...');
+      app.relaunch();
+      app.exit(0);
+    }
+    
     return { success: true };
   } catch (error) {
     console.error('Failed to restart app:', error);
