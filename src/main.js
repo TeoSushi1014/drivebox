@@ -38,6 +38,61 @@ if (process.platform === 'win32') {
 // Initialize electron-store
 const store = new Store();
 
+// Helper function to read apps.json with proper path resolution
+function getAppsData() {
+  try {
+    let appsPath;
+    
+    if (app.isPackaged) {
+      // In production, files are in asar package
+      appsPath = path.join(__dirname, '../data/apps.json');
+      console.log('Production mode - Looking for apps.json at:', appsPath);
+    } else {
+      // In development, use direct path
+      appsPath = path.join(app.getAppPath(), 'data', 'apps.json');
+      console.log('Development mode - Looking for apps.json at:', appsPath);
+    }
+    
+    if (fs.existsSync(appsPath)) {
+      const appsData = fs.readFileSync(appsPath, 'utf8');
+      const parsedData = JSON.parse(appsData);
+      console.log(`Successfully loaded ${parsedData.length} apps from apps.json`);
+      return parsedData;
+    } else {
+      console.error('apps.json not found at:', appsPath);
+      
+      // Try alternative paths
+      const altPaths = [
+        path.join(__dirname, '../data/apps.json'),
+        path.join(app.getAppPath(), 'data', 'apps.json'),
+        path.join(process.resourcesPath, 'data', 'apps.json'),
+        path.join(process.resourcesPath, 'app', 'data', 'apps.json')
+      ];
+      
+      for (const altPath of altPaths) {
+        console.log('Trying alternative path:', altPath);
+        if (fs.existsSync(altPath)) {
+          const appsData = fs.readFileSync(altPath, 'utf8');
+          const parsedData = JSON.parse(appsData);
+          console.log(`Successfully loaded ${parsedData.length} apps from alternative path`);
+          return parsedData;
+        }
+      }
+    }
+    
+    console.error('apps.json not found in any expected location');
+    console.log('Available paths:');
+    console.log('  __dirname:', __dirname);
+    console.log('  app.getAppPath():', app.getAppPath());
+    console.log('  process.resourcesPath:', process.resourcesPath);
+    
+    return [];
+  } catch (error) {
+    console.error('Error reading apps.json:', error);
+    return [];
+  }
+}
+
 // Download management
 const activeDownloads = new Map();
 
@@ -166,6 +221,14 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  console.log('App is ready, creating window...');
+  console.log('App path:', app.getAppPath());
+  console.log('Is packaged:', app.isPackaged);
+  
+  // Test loading apps data on startup
+  const appsData = getAppsData();
+  console.log(`Loaded ${appsData.length} apps from configuration`);
+  
   createWindow();
 
   app.on('activate', () => {
@@ -189,14 +252,9 @@ app.on('window-all-closed', () => {
 // IPC Handlers
 ipcMain.handle('get-apps', async () => {
   try {
-    const appsPath = path.join(__dirname, '../data/apps.json');
-    if (fs.existsSync(appsPath)) {
-      const appsData = fs.readFileSync(appsPath, 'utf8');
-      return JSON.parse(appsData);
-    }
-    return [];
+    return getAppsData();
   } catch (error) {
-    console.error('Error reading apps.json:', error);
+    console.error('Error in get-apps handler:', error);
     return [];
   }
 });
@@ -750,11 +808,8 @@ ipcMain.handle('open-app', async (event, appId) => {
     
     if (!appInfo) {
       throw new Error('App not installed');
-    }
-
-    // Get app configuration to check for executablePath
-    const appsPath = path.join(__dirname, '../data/apps.json');
-    const appsData = JSON.parse(fs.readFileSync(appsPath, 'utf8'));
+    }    // Get app configuration to check for executablePath
+    const appsData = getAppsData();
     const appConfig = appsData.find(a => a.id === appId);
     
     let executablePath = null;
@@ -975,8 +1030,10 @@ ipcMain.handle('open-app', async (event, appId) => {
 
 ipcMain.handle('check-for-updates', async (event, appId) => {
   try {
-    const appsPath = path.join(__dirname, '../data/apps.json');
-    const appsData = JSON.parse(fs.readFileSync(appsPath, 'utf8'));
+    const appsData = getAppsData();
+    if (appsData.length === 0) {
+      return { success: false, error: 'Could not read apps configuration' };
+    }
     const app = appsData.find(a => a.id === appId);
     
     if (!app) {

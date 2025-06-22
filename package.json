@@ -46,12 +46,13 @@
     "productName": "DriveBox",
     "directories": {
       "output": "dist"
-    },
-    "files": [
+    },    "files": [
       "src/**/*",
+      "data/**/*",
+      "assets/**/*",
       "node_modules/**/*",
       "package.json"
-    ],    "win": {
+    ],"win": {
       "target": "portable",
       "icon": "assets/icon.ico",
       "signAndEditExecutable": false,
