@@ -146,12 +146,11 @@
   font-weight: var(--font-weight-medium);
   color: var(--color-text-secondary);
   font-size: var(--font-size-xs);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  text-transform: uppercase;  letter-spacing: 0.5px;
 }
 
 .contact-link {
-  color: var(--color-accent);
+  color: var(--color-text-primary);
   text-decoration: none;
   font-weight: var(--font-weight-semibold);
   transition: all var(--transition-fast);
@@ -159,8 +158,8 @@
 }
 
 .contact-link:hover {
-  color: var(--color-accent-hover);
-  text-shadow: 0 0 8px rgba(0, 120, 212, 0.3);
+  color: var(--color-text-secondary);
+  text-shadow: none;
 }
 
 .contact-link::after {
@@ -170,7 +169,7 @@
   left: 0;
   width: 0;
   height: 1px;
-  background: var(--color-accent);
+  background: var(--color-text-secondary);
   transition: width var(--transition-fast);
 }
 

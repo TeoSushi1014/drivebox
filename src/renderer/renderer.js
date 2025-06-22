@@ -1216,30 +1216,31 @@ class DriveBoxApp {    constructor() {
                 this.currentUpdateInfo = updateInfo;
                 
                 // Update available
-                if (updateStatus) {
-                    // Show update section
+                if (updateStatus) {                    // Show update section
                     if (updateSection) {
                         updateSection.style.display = 'block';
                     }
                     
                     updateStatus.className = 'update-status available';
                     updateStatus.innerHTML = `
-                        <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 8px;">
-                            <span>🎉</span>
-                            <strong>Có bản cập nhật mới: ${updateInfo.latestVersion}</strong>
-                        </div>                        <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 12px;">
+                        <div class="update-status-header">
+                            <span class="update-status-emoji">🎉</span>
+                            <span class="update-status-text">Có bản cập nhật mới: ${updateInfo.latestVersion}</span>
+                        </div>
+                        <div class="update-version-info">
                             Phiên bản hiện tại: ${updateInfo.currentVersion}
                             ${updateInfo.fileSize ? `<br>Dung lượng: ${this.formatFileSize(updateInfo.fileSize)}` : ''}
-                        </div><div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
-                            <button id="downloadUpdateBtn" class="btn btn-primary" style="font-size: 12px; padding: 6px 12px;">
+                        </div>
+                        <div style="display: flex; gap: var(--spacing-sm); justify-content: center; flex-wrap: wrap; margin-top: var(--spacing-md);">
+                            <button id="downloadUpdateBtn" class="btn btn-primary" style="font-size: var(--font-size-xs); padding: var(--spacing-xs) var(--spacing-sm);">
                                 Tải xuống ngay
                             </button>
-                            <button id="viewReleaseNotesBtn" class="btn btn-secondary" style="font-size: 12px; padding: 6px 12px;" data-version="${updateInfo.latestVersion}" data-notes="${(updateInfo.releaseNotes || '').replace(/"/g, '&quot;')}">
-                                Xem chi tiết
-                            </button>
+                            <button id="viewReleaseNotesBtn" class="btn btn-secondary" style="font-size: var(--font-size-xs); padding: var(--spacing-xs) var(--spacing-sm);" data-version="${updateInfo.latestVersion}" data-notes="${(updateInfo.releaseNotes || '').replace(/"/g, '&quot;')}">
+                                Xem chi tiết                            </button>
                         </div>
                     `;
-                      // Add event listeners for the new buttons
+                    
+                    // Add event listeners for the new buttons
                     setTimeout(() => {
                         const downloadBtn = document.getElementById('downloadUpdateBtn');
                         const releaseNotesBtn = document.getElementById('viewReleaseNotesBtn');                        if (downloadBtn) {
@@ -1334,14 +1335,13 @@ class DriveBoxApp {    constructor() {
                     if (updateSection) {
                         updateSection.style.display = 'block';
                     }
-                    
-                    updateStatus.className = 'update-status no-update';
+                      updateStatus.className = 'update-status no-update';
                     updateStatus.innerHTML = `
-                        <div style="display: flex; align-items: center; justify-content: center; gap: 8px;">
-                            <span>✅</span>
-                            <span>Bạn đang sử dụng phiên bản mới nhất</span>
+                        <div class="update-status-header">
+                            <span class="update-status-emoji">✅</span>
+                            <span class="update-status-text">Bạn đang sử dụng phiên bản mới nhất</span>
                         </div>
-                        <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">
+                        <div class="update-version-info">
                             Phiên bản hiện tại: ${updateInfo.currentVersion}
                         </div>
                     `;
@@ -1367,16 +1367,16 @@ class DriveBoxApp {    constructor() {
                 if (updateSection) {
                     updateSection.style.display = 'block';
                 }
-                
-                updateStatus.className = 'update-status error';
+                  updateStatus.className = 'update-status error';
                 updateStatus.innerHTML = `
-                    <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 8px;">
-                        <span>❌</span>
-                        <span>Lỗi kiểm tra cập nhật</span>                    </div>
-                    <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 8px;">
+                    <div class="update-status-header">
+                        <span class="update-status-emoji">❌</span>
+                        <span class="update-status-text">Lỗi kiểm tra cập nhật</span>
+                    </div>
+                    <div class="update-version-info">
                         ${error.message}
                     </div>
-                    <button id="retryUpdateCheckBtn" class="btn btn-primary" style="font-size: 12px; padding: 6px 12px;">
+                    <button id="retryUpdateCheckBtn" class="btn btn-primary" style="font-size: var(--font-size-xs); padding: var(--spacing-xs) var(--spacing-sm); margin-top: var(--spacing-md);">
                         Thử lại
                     </button>
                 `;

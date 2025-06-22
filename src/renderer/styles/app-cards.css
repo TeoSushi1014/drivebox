@@ -112,15 +112,12 @@
 }
 
 .version-label {
-  font-weight: var(--font-weight-medium);
-  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-medium);  color: var(--color-text-secondary);
 }
 
 .version-number {
-  background: var(--color-accent);
-  color: var(--color-surface);
+  color: var(--color-text-secondary);
   padding: 2px var(--spacing-xs);
-  border-radius: var(--border-radius-pill);
   font-weight: var(--font-weight-semibold);
   font-size: 0.7rem;
   line-height: 1;
