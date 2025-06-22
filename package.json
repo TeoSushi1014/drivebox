@@ -1,5 +1,5 @@
 {  "name": "drivebox",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Electron App Installer & Updater (Portable) with Auto-Update & Contact Support",
   "main": "src/main.js",  "scripts": {
     "start": "electron .",
