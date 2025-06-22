@@ -1,5 +1,4 @@
-class DriveBoxApp {
-    constructor() {
+class DriveBoxApp {    constructor() {
         this.apps = [];
         this.installedApps = {};
         this.downloadFolder = 'C:\\Tèo Sushi';
@@ -7,8 +6,9 @@ class DriveBoxApp {
         this.downloadQueue = [];
         this.currentDownload = null;
         this.isDownloading = false;
+        this.currentUpdateInfo = null; // Store current update information
         this.init();
-    }    async init() {
+    }async init() {
         this.initTheme();
         await this.updateFooterVersion(); // Update version display early
         await this.loadApps();
@@ -1194,9 +1194,10 @@ class DriveBoxApp {
 
             if (updateInfo.error) {
                 throw new Error(updateInfo.error);
-            }
-
-            if (updateInfo.hasUpdate) {
+            }            if (updateInfo.hasUpdate) {
+                // Store update info for later use
+                this.currentUpdateInfo = updateInfo;
+                
                 // Update available
                 if (updateStatus) {
                     // Show update section
@@ -1211,9 +1212,8 @@ class DriveBoxApp {
                             <strong>Có bản cập nhật mới: ${updateInfo.latestVersion}</strong>
                         </div>
                         <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 12px;">
-                            Phiên bản hiện tại: ${updateInfo.currentVersion}                        </div>
-                        <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
-                            <button id="downloadUpdateBtn" class="btn btn-primary" style="font-size: 12px; padding: 6px 12px;" data-update-info='${JSON.stringify(updateInfo)}'>
+                            Phiên bản hiện tại: ${updateInfo.currentVersion}                        </div>                        <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
+                            <button id="downloadUpdateBtn" class="btn btn-primary" style="font-size: 12px; padding: 6px 12px;">
                                 Tải xuống ngay
                             </button>
                             <button id="viewReleaseNotesBtn" class="btn btn-secondary" style="font-size: 12px; padding: 6px 12px;" data-version="${updateInfo.latestVersion}" data-notes="${(updateInfo.releaseNotes || '').replace(/"/g, '&quot;')}">
@@ -1225,20 +1225,17 @@ class DriveBoxApp {
                     setTimeout(() => {
                         const downloadBtn = document.getElementById('downloadUpdateBtn');
                         const releaseNotesBtn = document.getElementById('viewReleaseNotesBtn');
-                        
-                        if (downloadBtn) {
+                          if (downloadBtn) {
                             downloadBtn.addEventListener('click', (e) => {
                                 e.preventDefault();
                                 console.log('Download button clicked');
-                                try {
-                                    const updateDataStr = downloadBtn.getAttribute('data-update-info');
-                                    console.log('Update data string:', updateDataStr);
-                                    const updateData = JSON.parse(updateDataStr);
-                                    console.log('Parsed update data:', updateData);
-                                    this.downloadUpdate(updateData);
-                                } catch (error) {
-                                    console.error('Error parsing update data:', error);
-                                    this.downloadUpdate(updateInfo); // Fallback to original updateInfo
+                                
+                                // Use stored updateInfo instead of parsing JSON
+                                if (this.currentUpdateInfo) {
+                                    this.downloadUpdate(this.currentUpdateInfo);
+                                } else {
+                                    console.error('No update info available');
+                                    this.showToast('Không thể tải cập nhật: Thiếu thông tin cập nhật', 'error');
                                 }
                             });
                         }
@@ -1270,16 +1267,15 @@ class DriveBoxApp {
                                                 .replace(/&gt;/g, '>');
                                         }
                                           console.log('Decoded notes:', notes);
-                                        
-                                        if (!notes || notes.trim() === '') {
+                                          if (!notes || notes.trim() === '') {
                                             notes = 'Không có thông tin chi tiết về bản cập nhật này.';
                                         }
                                         
-                                        // Release notes modal removed
-                                        
-                                    } catch (error) {
+                                        // Show release notes in modal
+                                        this.showReleaseNotesModal(version, notes);
+                                          } catch (error) {
                                         console.error('Error handling release notes:', error);
-                                        // Release notes modal removed
+                                        this.showToast('Lỗi khi hiển thị thông tin cập nhật', 'error');
                                     } finally {
                                         // Re-enable button after a delay
                                         setTimeout(() => {
@@ -1409,222 +1405,83 @@ class DriveBoxApp {
         return;
     }
 
-    // Handle update download from toast
-    async handleUpdateDownload() {
-        try {
-            // Get current update info from the status element
-            const updateStatus = document.getElementById('updateStatus');
-            if (updateStatus && updateStatus.querySelector('button[onclick*="downloadUpdate"]')) {
-                updateStatus.querySelector('button[onclick*="downloadUpdate"]').click();
-            } else {
-                this.showToast('Vui lòng sử dụng nút tải xuống trong phần cập nhật', 'warning');
-            }
-            
-            // Remove update toast
-            const updateToast = document.querySelector('.update-toast');
-            if (updateToast) {
-                updateToast.remove();
-            }
-        } catch (error) {
-            console.error('Error handling update download:', error);
-            this.showToast('Lỗi khi tải cập nhật', 'error');
-        }
-    }    // Download Update
+    // Download Update
     async downloadUpdate(updateInfo) {
         try {
-            const updateStatus = document.getElementById('updateStatus');
-            const updateSection = document.getElementById('updateSection');
-            
-            // Show update section
-            if (updateSection) {
-                updateSection.style.display = 'block';
-            }
-            
-            // Reset download start time for speed calculation
-            this.downloadStartTime = Date.now();
-            
-            // Show initial download status
-            if (updateStatus) {
-                updateStatus.className = 'update-status checking';
-                updateStatus.innerHTML = `
-                    <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 8px;">
-                        <span>🔄</span>
-                        <strong>Đang tải xuống v${updateInfo.latestVersion}...</strong>
-                    </div>
-                    <div class="update-progress-container" style="margin-top: 8px;">
-                        <div class="update-progress-bar" style="width: 100%; height: 6px; background: #f0f0f0; border-radius: 3px; overflow: hidden;">
-                            <div class="update-progress-fill" style="width: 0%; height: 100%; background: linear-gradient(90deg, #4CAF50, #45a049); border-radius: 3px; transition: width 0.3s ease;"></div>
-                        </div>
-                        <div class="update-progress-info" style="display: flex; justify-content: space-between; font-size: 11px; margin-top: 4px; color: #666;">
-                            <span class="update-progress-text">Đang chuẩn bị...</span>
-                            <span class="update-progress-speed"></span>
-                        </div>
-                    </div>
-                `;
-            }
-
+            console.log('Starting app update download:', updateInfo);
             this.showToast('🔄 Đang bắt đầu tải xuống cập nhật...', 'info');
             this.updateStatusBar(`🔄 Đang tải xuống cập nhật v${updateInfo.latestVersion}...`);
             
-            // Set up progress listeners
-            this.setupUpdateProgressListeners();
+            // Check if the electronAPI method exists
+            if (!window.electronAPI || typeof window.electronAPI.downloadAppUpdate !== 'function') {
+                throw new Error('App update download function not available');
+            }
             
             const result = await window.electronAPI.downloadAppUpdate(updateInfo);
             
-            if (result.success) {
-                // Update completed successfully
-                if (updateStatus) {
-                    updateStatus.className = 'update-status success';
-                    updateStatus.innerHTML = `
-                        <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 8px;">
-                            <span>✅</span>
-                            <strong>Cập nhật v${updateInfo.latestVersion} đã tải xong!</strong>
-                        </div>
-                        <div style="font-size: 12px; margin-bottom: 12px; color: #4CAF50;">                            Khởi động lại ứng dụng để cài đặt cập nhật
-                        </div>
-                        <div style="display: flex; gap: 8px; justify-content: center;">
-                            <button id="restartNowBtn" class="btn btn-success" style="font-size: 12px; padding: 6px 12px;">
-                                Khởi động lại ngay
-                            </button>
-                            <button id="restartLaterBtn" class="btn btn-secondary" style="font-size: 12px; padding: 6px 12px;">
-                                Để sau
-                            </button>
-                        </div>
-                    `;
-                    
-                    // Add event listeners
-                    setTimeout(() => {
-                        const restartNowBtn = document.getElementById('restartNowBtn');
-                        const restartLaterBtn = document.getElementById('restartLaterBtn');
-                        
-                        if (restartNowBtn) {
-                            restartNowBtn.addEventListener('click', () => this.promptRestart());
-                        }
-                        
-                        if (restartLaterBtn) {
-                            restartLaterBtn.addEventListener('click', () => {
-                                document.getElementById('updateSection').style.display = 'none';
-                            });
-                        }
-                    }, 100);
-                }
-                
+            if (result && result.success) {
                 this.showToast(`✅ Cập nhật v${updateInfo.latestVersion} đã tải xong! Khởi động lại để cài đặt`, 'success');
                 this.updateStatusBar(`✅ Cập nhật v${updateInfo.latestVersion} sẵn sàng - Khởi động lại để cài đặt`);
                 
-                // Show restart notification after delay
+                // Show restart prompt
                 setTimeout(() => {
-                    this.showRestartNotification(updateInfo.latestVersion);
-                }, 3000);
+                    if (confirm('Cập nhật đã được tải xuống. Bạn có muốn khởi động lại ứng dụng ngay để cài đặt cập nhật?')) {
+                        window.electronAPI.restartApp && window.electronAPI.restartApp();
+                    }
+                }, 2000);
                 
             } else {
-                throw new Error(result.error || 'Tải xuống thất bại');
+                throw new Error(result ? result.error : 'Tải xuống thất bại');
             }
             
         } catch (error) {
             console.error('Update download failed:', error);
-            
-            // Show error status
-            const updateStatus = document.getElementById('updateStatus');
-            const updateSection = document.getElementById('updateSection');
-            
-            if (updateStatus) {
-                // Show update section for error
-                if (updateSection) {
-                    updateSection.style.display = 'block';
-                }
-                
-                updateStatus.className = 'update-status error';
-                updateStatus.innerHTML = `                    <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 8px;">
-                        <span>❌</span>
-                        <strong>Lỗi tải cập nhật</strong>
-                    </div>
-                    <div style="font-size: 11px; margin-bottom: 12px; color: #f44336;">
-                        ${error.message}
-                    </div>
-                    <div style="display: flex; gap: 8px; justify-content: center;">
-                        <button id="retryDownloadBtn" class="btn btn-primary" style="font-size: 12px; padding: 6px 12px;">
-                            Thử lại
-                        </button>
-                        <button id="closeDownloadBtn" class="btn btn-secondary" style="font-size: 12px; padding: 6px 12px;">
-                            Đóng
-                        </button>
-                    </div>
-                `;
-                
-                // Add event listeners
-                setTimeout(() => {
-                    const retryBtn = document.getElementById('retryDownloadBtn');
-                    const closeBtn = document.getElementById('closeDownloadBtn');
-                    
-                    if (retryBtn) {
-                        retryBtn.addEventListener('click', () => this.checkForUpdates());
-                    }
-                    
-                    if (closeBtn) {
-                        closeBtn.addEventListener('click', () => {
-                            document.getElementById('updateSection').style.display = 'none';
-                        });
-                    }
-                }, 100);
-            }
-            
             this.showToast(`❌ Lỗi tải cập nhật: ${error.message}`, 'error');
             this.updateStatusBar(`❌ Tải cập nhật thất bại: ${error.message}`);
-        } finally {
-            // Clean up listeners
-            if (window.electronAPI.removeUpdateListeners) {
-                window.electronAPI.removeUpdateListeners();
-            }
         }
     }
 
-    // Setup update progress listeners
-    setupUpdateProgressListeners() {
-        if (window.electronAPI.onUpdateDownloadProgress) {
-            window.electronAPI.onUpdateDownloadProgress((progressData) => {
-                this.updateDownloadProgress(progressData);
-            });
-        }        
-        if (window.electronAPI.onShowReleaseNotes) {
-            window.electronAPI.onShowReleaseNotes((releaseData) => {
-                // Release notes modal removed
-            });
-        }
-        if (window.electronAPI.onUpdateDownloadError) {
-            window.electronAPI.onUpdateDownloadError((errorData) => {
-                this.handleUpdateDownloadError(errorData);
-            });
+    // Show Release Notes Modal
+    showReleaseNotesModal(version, notes) {
+        try {
+            // Get modal elements
+            const modal = document.getElementById('appModal');
+            const modalTitle = document.getElementById('modalTitle');
+            const modalBody = document.getElementById('modalBody');
+            
+            if (!modal || !modalTitle || !modalBody) {
+                console.error('Modal elements not found');
+                this.showToast('Không thể hiển thị thông tin cập nhật', 'error');
+                return;
+            }
+            
+            // Set modal title
+            modalTitle.textContent = `Chi tiết cập nhật v${version}`;
+            
+            // Format and set modal body
+            const formattedNotes = this.formatReleaseNotes(notes);
+            modalBody.innerHTML = `
+                <div style="max-height: 400px; overflow-y: auto; padding: 10px;">
+                    <div style="font-size: 14px; line-height: 1.6;">
+                        ${formattedNotes}
+                    </div>
+                </div>
+            `;
+            
+            // Show modal
+            modal.classList.remove('hidden');
+            
+            // Focus on modal for accessibility
+            modal.focus();
+            
+            console.log('Release notes modal displayed for version:', version);
+              } catch (error) {
+            console.error('Error showing release notes modal:', error);
+            this.showToast('Lỗi khi hiển thị thông tin cập nhật', 'error');
         }
     }
 
-    // Update download progress display
-    updateDownloadProgress(progressData) {
-        const updateStatus = document.getElementById('updateStatus');
-        if (!updateStatus) return;
-        
-        const progressFill = updateStatus.querySelector('.update-progress-fill');
-        const progressText = updateStatus.querySelector('.update-progress-text');  
-        const progressSpeed = updateStatus.querySelector('.update-progress-speed');
-        
-        if (progressFill) {
-            progressFill.style.width = `${progressData.progress}%`;
-        }
-        
-        if (progressText) {
-            if (progressData.completed) {
-                progressText.textContent = 'Hoàn thành';
-            } else {
-                const downloadedMB = (progressData.downloadedBytes / (1024 * 1024)).toFixed(1);
-                const totalMB = progressData.totalBytes ? (progressData.totalBytes / (1024 * 1024)).toFixed(1) : '?';
-                progressText.textContent = `${progressData.progress}% (${downloadedMB}/${totalMB} MB)`;
-            }
-        }
-        
-        if (progressSpeed && progressData.speed) {
-            progressSpeed.textContent = progressData.speed;
-        }
-    }    // Format release notes to HTML
+    // Format release notes to HTML
     formatReleaseNotes(notes) {
         if (!notes || typeof notes !== 'string') {
             return '<p>Không có thông tin chi tiết.</p>';
@@ -1635,33 +1492,21 @@ class DriveBoxApp {
         // Clean up and prepare the text
         let formatted = notes
             .trim()
-            // First, handle line breaks properly
             .replace(/\r\n/g, '\n')
             .replace(/\r/g, '\n');
         
         // Convert markdown to HTML step by step
         formatted = formatted
-            // Convert headers (must be at start of line)
             .replace(/^### (.+)$/gm, '<h3>$1</h3>')
             .replace(/^## (.+)$/gm, '<h2>$1</h2>')
             .replace(/^# (.+)$/gm, '<h1>$1</h1>')
-            
-            // Convert bold and italic
             .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
             .replace(/\*(.+?)\*/g, '<em>$1</em>')
             .replace(/__(.+?)__/g, '<strong>$1</strong>')
             .replace(/_(.+?)_/g, '<em>$1</em>')
-            
-            // Convert inline code
             .replace(/`([^`]+)`/g, '<code>$1</code>')
-            
-            // Convert links
             .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
-            
-            // Convert bullet points (- or * at start of line)
             .replace(/^[\-\*] (.+)$/gm, '<li>$1</li>')
-            
-            // Convert numbered lists
             .replace(/^\d+\. (.+)$/gm, '<li>$1</li>');
         
         // Clean up empty lines and convert to paragraphs
@@ -1710,97 +1555,16 @@ class DriveBoxApp {
         // Close any remaining paragraph or list
         if (currentParagraph.trim()) {
             processedLines.push(`<p>${currentParagraph}</p>`);
-        }        if (inList) {
+        }
+        if (inList) {
             processedLines.push('</ul>');
         }
-          const result = processedLines.join('\n');
-          return result || '<p>Không có thông tin chi tiết.</p>';
+        
+        const result = processedLines.join('\n');
+        return result || '<p>Không có thông tin chi tiết.</p>';
     }
 
-    // Handle update download error
-    handleUpdateDownloadError(errorData) {
-        console.error('Update download error:', errorData);
-        this.showToast(`❌ Lỗi tải cập nhật v${errorData.version}: ${errorData.error}`, 'error');
-        this.updateStatusBar(`❌ Tải cập nhật v${errorData.version} thất bại: ${errorData.error}`);
-    }
-
-    // Show restart notification
-    showRestartNotification(version) {
-        const notification = document.createElement('div');
-        notification.className = 'restart-notification toast-notification info';
-        notification.innerHTML = `
-            <div class="restart-content">
-                <div class="restart-header">
-                    <span>🔄</span>
-                    <strong>Cập nhật sẵn sàng</strong>                </div>
-                <div class="restart-body">
-                    Cập nhật v${version} đã được tải xuống và sẵn sàng cài đặt.
-                    Bạn có muốn khởi động lại ngay bây giờ?
-                </div>
-                <div class="restart-actions" style="margin-top: 12px; display: flex; gap: 8px;">
-                    <button id="restartAppBtn" class="btn btn-success" style="font-size: 12px; padding: 6px 12px;">
-                        Khởi động lại
-                    </button>
-                    <button id="dismissRestartBtn" class="btn btn-secondary" style="font-size: 12px; padding: 6px 12px;">
-                        Để sau
-                    </button>
-                </div>
-            </div>
-        `;
-        
-        // Add event listeners after creating the notification
-        setTimeout(() => {
-            const restartBtn = document.getElementById('restartAppBtn');
-            const dismissBtn = document.getElementById('dismissRestartBtn');
-            
-            if (restartBtn) {
-                restartBtn.addEventListener('click', () => this.promptRestart());
-            }
-            
-            if (dismissBtn) {
-                dismissBtn.addEventListener('click', () => {
-                    notification.remove();
-                });
-            }
-        }, 100);
-        
-        document.body.appendChild(notification);
-        
-        setTimeout(() => notification.classList.add('show'), 100);
-        
-        // Auto-remove after 15 seconds
-        setTimeout(() => {
-            if (notification.parentNode) {
-                notification.classList.remove('show');
-                setTimeout(() => {
-                    if (notification.parentNode) {
-                        notification.remove();
-                    }
-                }, 300);
-            }
-        }, 15000);
-    }    // Prompt for restart
-    async promptRestart() {
-        if (confirm('Ứng dụng sẽ được khởi động lại để cài đặt cập nhật. Tiếp tục?')) {
-            this.showToast('Đang khởi động lại ứng dụng...', 'info');
-            this.updateStatusBar('🔄 Đang khởi động lại để cài đặt cập nhật...');
-            
-            try {
-                if (window.electronAPI && window.electronAPI.restartApp) {
-                    const result = await window.electronAPI.restartApp();
-                    if (!result.success) {
-                        throw new Error(result.error || 'Khởi động lại thất bại');
-                    }
-                } else {
-                    throw new Error('API khởi động lại không có sẵn');
-                }
-            } catch (error) {
-                console.error('Restart failed:', error);
-                this.showToast('❌ Không thể tự động khởi động lại. Vui lòng tự khởi động lại ứng dụng để hoàn tất cập nhật', 'error');
-                this.updateStatusBar('❌ Vui lòng tự khởi động lại ứng dụng để hoàn tất cập nhật');
-            }
-        }
-    }
+    // ...existing code...
 }
 
 // Initialize the app when DOM is loaded
