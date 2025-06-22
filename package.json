@@ -53,7 +53,9 @@
       "package.json"
     ],    "win": {
       "target": "portable",
-      "icon": "assets/icon.ico"
+      "icon": "assets/icon.ico",
+      "signAndEditExecutable": false,
+      "signDlls": false
     },
     "mac": {
       "target": "dmg",
