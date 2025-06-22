@@ -53,7 +53,8 @@
       "package.json"
     ],    "win": {
       "target": "nsis",
-      "icon": "assets/icon.ico"
+      "icon": "assets/icon.ico",
+      "sign": false
     },
     "mac": {
       "target": "dmg",
