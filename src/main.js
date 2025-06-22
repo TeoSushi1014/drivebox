@@ -27,7 +27,6 @@ if (process.platform === 'win32') {
     
     // Set environment variables for proper UTF-8 handling
     process.env.PYTHONIOENCODING = 'utf-8';
-    process.env.NODE_OPTIONS = '--input-type=module';
     
     console.log('Console encoding configured for UTF-8');
   } catch (e) {
