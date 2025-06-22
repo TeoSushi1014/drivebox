@@ -60,22 +60,23 @@ class DriveBoxApp {    constructor() {
                 }, 1000);
             }
         });
-        
-        // Listen for update download progress if available
+          // Listen for update download progress if available
         if (window.electronAPI.onUpdateDownloadProgress) {
             window.electronAPI.onUpdateDownloadProgress((data) => {
-                console.log('Update download progress:', data);
-                
-                // Use the same progress bar for update downloads
-                if (data.progress !== undefined) {
+                console.log('Update download progress:', data);                // Use the same progress bar for update downloads with enhanced data
+                if (data.progress !== undefined && this.isDownloading && this.currentDownload?.app?.id === 'app-update') {
                     this.updateEnhancedProgressBar({
-                        ...data,
-                        appName: `Cập nhật v${data.version || 'mới'}`,
-                        message: data.message || `Đang tải cập nhật... ${data.progress}%`
+                        progress: data.progress,
+                        appName: `Cập nhật DriveBox v${data.version || this.currentUpdateInfo?.latestVersion || 'mới'}`,
+                        downloadedSize: data.downloadedBytes || data.transferred || 0,
+                        totalSize: data.totalBytes || data.total || this.currentUpdateInfo?.fileSize || 0,
+                        speed: data.speed || data.bytesPerSecond || 0,
+                        eta: data.eta || 0,
+                        message: data.message || `Đang tải cập nhật... ${Math.round(data.progress)}%`
                     });
                 }
                 
-                this.updateStatusBar(data.message || `🔄 Đang tải cập nhật... ${data.progress || 0}%`);
+                this.updateStatusBar(data.message || `🔄 Đang tải cập nhật... ${Math.round(data.progress || 0)}%`);
             });
         }
     }updateEnhancedProgressBar(data) {
@@ -1226,9 +1227,10 @@ class DriveBoxApp {    constructor() {
                         <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 8px;">
                             <span>🎉</span>
                             <strong>Có bản cập nhật mới: ${updateInfo.latestVersion}</strong>
-                        </div>
-                        <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 12px;">
-                            Phiên bản hiện tại: ${updateInfo.currentVersion}                        </div>                        <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
+                        </div>                        <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 12px;">
+                            Phiên bản hiện tại: ${updateInfo.currentVersion}
+                            ${updateInfo.fileSize ? `<br>Dung lượng: ${this.formatFileSize(updateInfo.fileSize)}` : ''}
+                        </div><div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
                             <button id="downloadUpdateBtn" class="btn btn-primary" style="font-size: 12px; padding: 6px 12px;">
                                 Tải xuống ngay
                             </button>
@@ -1447,8 +1449,7 @@ class DriveBoxApp {    constructor() {
             if (progressContainer) progressContainer.classList.add('active');
             if (fileName) fileName.textContent = `Cập nhật DriveBox v${updateInfo.latestVersion}`;
             if (fileStatus) fileStatus.textContent = 'Đang khởi tạo tải xuống cập nhật...';
-            
-            // Set downloading state for progress bar
+              // Set downloading state for progress bar
             this.isDownloading = true;
             this.currentDownload = { 
                 app: { 
@@ -1456,6 +1457,16 @@ class DriveBoxApp {    constructor() {
                     id: 'app-update' 
                 } 
             };
+            
+            // Initialize progress display with default values
+            this.updateEnhancedProgressBar({
+                progress: 0,
+                appName: `Cập nhật DriveBox v${updateInfo.latestVersion}`,
+                downloadedSize: 0,
+                totalSize: updateInfo.fileSize || 0,
+                speed: 0,
+                message: 'Đang khởi tạo tải xuống cập nhật...'
+            });
             
             // Check if the electronAPI method exists
             if (!window.electronAPI || typeof window.electronAPI.downloadAppUpdate !== 'function') {

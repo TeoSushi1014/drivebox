@@ -2211,14 +2211,15 @@ ipcMain.handle('check-app-updates', async () => {
     const latestVersion = latestRelease.tag_name.replace('v', '');
     
     console.log('Latest version from GitHub:', latestVersion);
-    
-    return {
+      return {
       hasUpdate: latestVersion !== currentVersion,
       currentVersion,
       latestVersion: latestRelease.tag_name,
       downloadUrl: latestRelease.assets[0]?.browser_download_url,
+      fileSize: latestRelease.assets[0]?.size || 0,
+      fileName: latestRelease.assets[0]?.name || 'DriveBox-Setup.exe',
       releaseNotes: latestRelease.body || 'No release notes available'
-    };  } catch (error) {
+    };} catch (error) {
     console.error('Update check failed:', error);
     
     // More specific error handling
@@ -2274,6 +2275,9 @@ ipcMain.handle('download-app-update', async (event, updateInfo) => {
       throw new Error('No download URL provided');
     }
     console.log('Starting app update download...');
+    
+    // Reset download start time for accurate speed calculation
+    downloadStartTime = null;
     
     // Create temp directory for update
     const tempDir = path.join(os.tmpdir(), 'drivebox-update');
@@ -2349,8 +2353,7 @@ ipcMain.handle('download-app-update', async (event, updateInfo) => {
     
     const fileStream = fs.createWriteStream(filePath);
     
-    return new Promise((resolve, reject) => {
-      response.body.on('data', (chunk) => {
+    return new Promise((resolve, reject) => {      response.body.on('data', (chunk) => {
         downloadedBytes += chunk.length;
         
         // Send progress update to renderer
@@ -2358,11 +2361,21 @@ ipcMain.handle('download-app-update', async (event, updateInfo) => {
           const progress = Math.round((downloadedBytes / contentLength) * 100);
           const speed = calculateDownloadSpeed(downloadedBytes);
           
+          // Calculate ETA
+          let eta = 0;
+          if (downloadStartTime && downloadedBytes > 0) {
+            const elapsedTime = (Date.now() - downloadStartTime) / 1000;
+            const avgSpeed = downloadedBytes / elapsedTime; // bytes per second
+            const remainingBytes = contentLength - downloadedBytes;
+            eta = avgSpeed > 0 ? Math.round(remainingBytes / avgSpeed) : 0;
+          }
+          
           mainWindow.webContents.send('update-download-progress', {
             progress,
             downloadedBytes,
             totalBytes: contentLength,
             speed,
+            eta,
             version: updateInfo.latestVersion
           });
         }
