@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![DriveBox](https://img.shields.io/badge/DriveBox-v1.1.0-blue?style=for-the-badge&logo=electron)
+![DriveBox](https://img.shields.io/badge/DriveBox-v1.2.0-blue?style=for-the-badge&logo=electron)
 ![Platform](https://img.shields.io/badge/platform-Windows-lightgrey?style=for-the-badge&logo=windows)
 ![License](https://img.shields.io/badge/license-MIT-green?style=for-the-badge)
 
@@ -76,8 +76,8 @@ npm install
 # Run in development mode
 npm run dev
 
-# Build for production
-npm run build
+# Build for production (with code signing disabled)
+$env:CSC_IDENTITY_AUTO_DISCOVERY="false"; $env:WIN_CSC_LINK=""; npm run build
 ```
 
 ## 🎮 Usage
@@ -108,7 +108,7 @@ Contact information is always visible in the footer:
 - **Project**: DriveBox repository
 
 ## 🛠️ Configuration
-
+s
 ### App Configuration
 Apps are configured in `data/apps.json`:
 ```json
