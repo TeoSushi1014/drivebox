@@ -2244,6 +2244,29 @@ ipcMain.handle('check-app-updates', async () => {
   }
 });
 
+// Helper function to calculate download speed
+let downloadStartTime = null;
+function calculateDownloadSpeed(downloadedBytes) {
+  if (!downloadStartTime) {
+    downloadStartTime = Date.now();
+    return 0;
+  }
+  
+  const elapsedTime = (Date.now() - downloadStartTime) / 1000; // in seconds
+  if (elapsedTime === 0) return 0;
+  
+  const bytesPerSecond = downloadedBytes / elapsedTime;
+  
+  // Convert to appropriate unit
+  if (bytesPerSecond < 1024) {
+    return `${Math.round(bytesPerSecond)} B/s`;
+  } else if (bytesPerSecond < 1024 * 1024) {
+    return `${Math.round(bytesPerSecond / 1024)} KB/s`;
+  } else {
+    return `${Math.round(bytesPerSecond / (1024 * 1024))} MB/s`;
+  }
+}
+
 // Download and install update
 ipcMain.handle('download-app-update', async (event, updateInfo) => {
   try {
@@ -2251,6 +2274,7 @@ ipcMain.handle('download-app-update', async (event, updateInfo) => {
       throw new Error('No download URL provided');
     }
     console.log('Starting app update download...');
+    
     // Create temp directory for update
     const tempDir = path.join(os.tmpdir(), 'drivebox-update');
     if (!fs.existsSync(tempDir)) {
@@ -2258,51 +2282,134 @@ ipcMain.handle('download-app-update', async (event, updateInfo) => {
     }
     const fileName = `drivebox-${updateInfo.latestVersion}.exe`;
     const filePath = path.join(tempDir, fileName);
-    // Download the update
-    const response = await fetch(updateInfo.downloadUrl);
-    if (!response.ok) {
-      throw new Error(`Download failed: ${response.status}`);
-    }
-    const fileStream = fs.createWriteStream(filePath);
-    response.body.pipe(fileStream);
-    // Format release notes (Markdown to HTML)
-    let formattedReleaseNotes = updateInfo.releaseNotes || '';
+    
+    // Format release notes (Markdown to HTML) first
+    let formattedReleaseNotes = updateInfo.releaseNotes || 'No release notes available.';
     try {
-      // Simple Markdown to HTML conversion for basic formatting
+      // Enhanced Markdown to HTML conversion
       formattedReleaseNotes = formattedReleaseNotes
-        .replace(/\r\n|\r|\n/g, '\n')
-        .replace(/\n{2,}/g, '</p><p>')
-        .replace(/\n/g, '<br>')
-        .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
-        .replace(/\*(.*?)\*/g, '<i>$1</i>')
-        .replace(/\#\s(.+)/g, '<h2>$1</h2>')
-        .replace(/\-\s(.+)/g, '<li>$1</li>');
-      if (formattedReleaseNotes.includes('<li>')) {
-        formattedReleaseNotes = formattedReleaseNotes.replace(/(<li>.*<\/li>)/gs, '<ul>$1</ul>');
+        .replace(/\r\n|\r/g, '\n')
+        .replace(/\n{3,}/g, '\n\n')
+        // Headers
+        .replace(/^###\s(.+)$/gm, '<h3>$1</h3>')
+        .replace(/^##\s(.+)$/gm, '<h2>$1</h2>')
+        .replace(/^#\s(.+)$/gm, '<h1>$1</h1>')
+        // Bold and italic
+        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.+?)\*/g, '<em>$1</em>')
+        // Code blocks
+        .replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>')
+        .replace(/`([^`]+)`/g, '<code>$1</code>')
+        // Lists
+        .replace(/^\s*-\s(.+)$/gm, '<li>$1</li>')
+        .replace(/^\s*\*\s(.+)$/gm, '<li>$1</li>')
+        .replace(/^\s*\d+\.\s(.+)$/gm, '<li>$1</li>')
+        // Links
+        .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>')
+        // Paragraphs
+        .replace(/\n\n/g, '</p><p>')
+        .replace(/\n/g, '<br>');
+      
+      // Wrap consecutive list items in ul tags
+      formattedReleaseNotes = formattedReleaseNotes.replace(/(<li>.*<\/li>)/gs, (match) => {
+        return `<ul>${match}</ul>`;
+      });
+      
+      // Clean up nested ul tags
+      formattedReleaseNotes = formattedReleaseNotes.replace(/<\/ul>\s*<ul>/g, '');
+      
+      // Wrap in paragraph if not already wrapped
+      if (!formattedReleaseNotes.startsWith('<') && !formattedReleaseNotes.includes('</')) {
+        formattedReleaseNotes = `<p>${formattedReleaseNotes}</p>`;
+      } else if (!formattedReleaseNotes.startsWith('<p>') && !formattedReleaseNotes.startsWith('<h')) {
+        formattedReleaseNotes = `<p>${formattedReleaseNotes}</p>`;
       }
-      formattedReleaseNotes = `<p>${formattedReleaseNotes}</p>`;
     } catch (e) {
-      // Fallback to plain text
+      console.warn('Release notes formatting failed:', e);
+      formattedReleaseNotes = `<p>${updateInfo.releaseNotes || 'No release notes available.'}</p>`;
     }
-    // Send release notes to renderer for display
+    
+    // Send formatted release notes to renderer immediately for display
     if (mainWindow && mainWindow.webContents) {
       mainWindow.webContents.send('show-release-notes', {
         version: updateInfo.latestVersion,
-        notes: formattedReleaseNotes
+        notes: formattedReleaseNotes,
+        downloadUrl: updateInfo.downloadUrl
       });
     }
+    
+    // Start download with progress tracking
+    const response = await fetch(updateInfo.downloadUrl);
+    if (!response.ok) {
+      throw new Error(`Download failed: ${response.statusText} (${response.status})`);
+    }
+    
+    const contentLength = parseInt(response.headers.get('content-length'), 10);
+    let downloadedBytes = 0;
+    
+    const fileStream = fs.createWriteStream(filePath);
+    
     return new Promise((resolve, reject) => {
+      response.body.on('data', (chunk) => {
+        downloadedBytes += chunk.length;
+        
+        // Send progress update to renderer
+        if (contentLength && mainWindow && mainWindow.webContents) {
+          const progress = Math.round((downloadedBytes / contentLength) * 100);
+          const speed = calculateDownloadSpeed(downloadedBytes);
+          
+          mainWindow.webContents.send('update-download-progress', {
+            progress,
+            downloadedBytes,
+            totalBytes: contentLength,
+            speed,
+            version: updateInfo.latestVersion
+          });
+        }
+      });
+      
+      response.body.pipe(fileStream);
+      
       fileStream.on('finish', () => {
         console.log('Update downloaded successfully');
+        
+        // Final progress update
+        if (mainWindow && mainWindow.webContents) {
+          mainWindow.webContents.send('update-download-progress', {
+            progress: 100,
+            downloadedBytes,
+            totalBytes: contentLength || downloadedBytes,
+            speed: 0,
+            version: updateInfo.latestVersion,
+            completed: true
+          });
+        }
+        
         resolve({ 
           success: true, 
           filePath: filePath,
           message: 'Update downloaded successfully',
-          releaseNotes: formattedReleaseNotes
+          releaseNotes: formattedReleaseNotes,
+          version: updateInfo.latestVersion
         });
       });
+      
       fileStream.on('error', (error) => {
         console.error('Update download error:', error);
+        
+        // Send error to renderer
+        if (mainWindow && mainWindow.webContents) {
+          mainWindow.webContents.send('update-download-error', {
+            error: error.message,
+            version: updateInfo.latestVersion
+          });
+        }
+        
+        reject(error);
+      });
+      
+      response.body.on('error', (error) => {
+        console.error('Update download stream error:', error);
         reject(error);
       });
     });
@@ -2315,4 +2422,17 @@ ipcMain.handle('download-app-update', async (event, updateInfo) => {
 // Get app version
 ipcMain.handle('get-app-version', async () => {
   return app.getVersion();
+});
+
+// Restart application for update
+ipcMain.handle('restart-app', async () => {
+  try {
+    console.log('Restarting application for update...');
+    app.relaunch();
+    app.exit(0);
+    return { success: true };
+  } catch (error) {
+    console.error('Failed to restart app:', error);
+    return { success: false, error: error.message };
+  }
 });

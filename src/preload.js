@@ -21,9 +21,25 @@ contextBridge.exposeInMainWorld('electronAPI', {
   removeDownloadProgressListener: () => {
     ipcRenderer.removeAllListeners('download-progress');
   },
-  
-  // Auto-update APIs
+    // Auto-update APIs
   checkAppUpdates: () => ipcRenderer.invoke('check-app-updates'),
   downloadAppUpdate: (updateInfo) => ipcRenderer.invoke('download-app-update', updateInfo),
-  getAppVersion: () => ipcRenderer.invoke('get-app-version')
+  getAppVersion: () => ipcRenderer.invoke('get-app-version'),
+  restartApp: () => ipcRenderer.invoke('restart-app'),
+  
+  // Update progress listeners
+  onUpdateDownloadProgress: (callback) => {
+    ipcRenderer.on('update-download-progress', (event, data) => callback(data));
+  },
+  onShowReleaseNotes: (callback) => {
+    ipcRenderer.on('show-release-notes', (event, data) => callback(data));
+  },
+  onUpdateDownloadError: (callback) => {
+    ipcRenderer.on('update-download-error', (event, data) => callback(data));
+  },
+  removeUpdateListeners: () => {
+    ipcRenderer.removeAllListeners('update-download-progress');
+    ipcRenderer.removeAllListeners('show-release-notes');
+    ipcRenderer.removeAllListeners('update-download-error');
+  }
 });
