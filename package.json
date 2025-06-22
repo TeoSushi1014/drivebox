@@ -52,9 +52,13 @@
       "node_modules/**/*",
       "package.json"
     ],    "win": {
-      "target": "nsis",
-      "icon": "assets/icon.ico",
-      "sign": false
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "assets/icon.ico"
     },
     "mac": {
       "target": "dmg",
