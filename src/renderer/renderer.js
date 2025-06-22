@@ -448,12 +448,16 @@ class DriveBoxApp {
             if (iconImg) {
                 if (app.icon && app.icon.startsWith('http')) {
                     iconImg.src = app.icon;
-                    iconImg.style.display = 'block';
-                } else {
+                    iconImg.style.display = 'block';                } else {
                     iconImg.style.display = 'none';
                     const iconContainer = iconImg.parentElement;
                     if (iconContainer) {
-                        iconContainer.innerHTML = `<div style="width: 48px; height: 48px; background: #f0f0f0; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 24px;">${app.icon || '📦'}</div>`;
+                        // Use ico files based on app properties (600 sentences -> 1.ico, 200 sentences -> 2.ico)
+                        let iconPath = '../../assets/1.ico'; // Default to 1.ico (600 sentences)
+                        if (app.sentences === 200 || app.description?.includes('200') || app.name?.includes('200')) {
+                            iconPath = '../../assets/2.ico'; // Use 2.ico for 200 sentences
+                        }
+                        iconContainer.innerHTML = `<img src="${iconPath}" style="width: 48px; height: 48px; border-radius: 8px;" alt="App Icon">`;
                     }
                 }
             }

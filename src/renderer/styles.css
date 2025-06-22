@@ -2328,6 +2328,8 @@ body {
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     border-top: 1px solid rgba(255, 255, 255, 0.2);
+    border-top-left-radius: 20px;
+    border-top-right-radius: 20px;
     padding: 12px 20px;
     transition: all var(--transition-standard);
     animation: slideUpGlass 0.6s ease-out;
@@ -2464,6 +2466,8 @@ body {
         rgba(255, 255, 255, 0.04),
         rgba(255, 255, 255, 0.06));
     border-top-color: rgba(255, 255, 255, 0.1);
+    border-top-left-radius: 20px;
+    border-top-right-radius: 20px;
 }
 
 [data-theme="dark"] .contact-item-inline {
