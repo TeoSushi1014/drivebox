@@ -8,7 +8,7 @@
 
 **Portable App Installer & Updater with Beautiful Liquid Glass UI**
 
-[📱 Zalo](https://zalo.me/0838696697) • [📘 Facebook](https://www.facebook.com/boboiboy.gala.7/) • [🐙 GitHub](https://github.com/TeoSushi1014/) • [🚗 QuizDrive](https://github.com/TeoSushi1014/quizdrive)
+[📱 Zalo](https://zalo.me/0838696697) • [📘 Facebook](https://www.facebook.com/boboiboy.gala.7/) • [🐙 GitHub](https://github.com/TeoSushi1014/) • [🚗 DriveBox](https://github.com/TeoSushi1014/drivebox)
 
 </div>
 
@@ -59,7 +59,7 @@
 ## 🚀 Quick Start
 
 ### Installation
-1. Download the latest release from [GitHub Releases](https://github.com/TeoSushi1014/quizdrive/releases)
+1. Download the latest release from [GitHub Releases](https://github.com/TeoSushi1014/drivebox/releases)
 2. Run `DriveBox-Setup.exe`
 3. Follow the installation wizard
 4. Launch DriveBox from desktop shortcut
@@ -67,7 +67,7 @@
 ### Development
 ```bash
 # Clone repository
-git clone https://github.com/TeoSushi1014/quizdrive.git
+git clone https://github.com/TeoSushi1014/drivebox.git
 cd drivebox
 
 # Install dependencies
@@ -105,7 +105,7 @@ Contact information is always visible in the footer:
 - **Zalo**: 0838 696 697 (instant messaging)
 - **Facebook**: boboiboy.gala.7
 - **GitHub**: TeoSushi1014 (issues and discussions)
-- **Project**: QuizDrive repository
+- **Project**: DriveBox repository
 
 ## 🛠️ Configuration
 
@@ -192,7 +192,7 @@ Need help? Contact us through any of these channels:
 
 - **Zalo**: [0838 696 697](https://zalo.me/0838696697) (Fastest response)
 - **Facebook**: [boboiboy.gala.7](https://www.facebook.com/boboiboy.gala.7/)
-- **GitHub Issues**: [Create an issue](https://github.com/TeoSushi1014/quizdrive/issues)
+- **GitHub Issues**: [Create an issue](https://github.com/TeoSushi1014/drivebox/issues)
 - **Email**: Available through GitHub profile
 
 ## 🙏 Acknowledgments
@@ -205,7 +205,7 @@ Need help? Contact us through any of these channels:
 
 <div align="center">
 
-**Made with ❤️ by [TeoSushi1014](https://github.com/TeoSushi1014)**
+**Made with ❤️ by [Hoàng Việt Quang (Tèo Sushi)](https://github.com/TeoSushi1014)**
 
 *Download faster, install easier, manage better*
 

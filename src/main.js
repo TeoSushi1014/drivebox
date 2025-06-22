@@ -1,3 +1,9 @@
+/**
+ * DriveBox - App Installer & Updater
+ * Author: Hoàng Việt Quang (Tèo Sushi)
+ * GitHub: https://github.com/TeoSushi1014/drivebox
+ */
+
 const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
@@ -2113,7 +2119,7 @@ ipcMain.handle('check-app-updates', async () => {
     const currentVersion = app.getVersion();
     console.log('Checking for updates, current version:', currentVersion);
     
-    const response = await fetch('https://api.github.com/repos/TeoSushi1014/quizdrive/releases/latest', {
+    const response = await fetch('https://api.github.com/repos/TeoSushi1014/drivebox/releases/latest', {
       headers: {
         'User-Agent': 'DriveBox-App'
       }

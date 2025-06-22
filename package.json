@@ -1,12 +1,10 @@
 {  "name": "drivebox",
   "version": "1.1.0",
   "description": "Electron App Installer & Updater (Portable) with Auto-Update & Contact Support",
-  "main": "src/main.js",  "scripts": {    "start": "electron .",    "dev": "electron . --dev",
+  "main": "src/main.js",  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
     "build": "electron-builder",
-    "build-portable": "electron-builder --config=electron-builder-portable.json",
-    "build-single": "npm run build-portable",
-    "package": "electron-packager . DriveBox --platform=win32 --arch=x64 --out=dist --overwrite --app-version=1.1.0",
-    "package-all": "electron-packager . DriveBox --all --out=dist --overwrite --app-version=1.1.0",
     "dist": "electron-builder --publish=never",    "test": "mocha tests/unit/*.test.js --timeout 10000",
     "lint": "eslint src/ --ext .js",
     "format": "prettier --write src/",
@@ -19,7 +17,7 @@
     "updater",
     "portable"
   ],
-  "author": "DriveBox Team",
+  "author": "Hoàng Việt Quang (Tèo Sushi)",
   "license": "MIT",  "devDependencies": {
     "electron": "^28.0.0",
     "electron-builder": "^24.0.0",
@@ -41,5 +39,30 @@
     "axios": "^1.6.0",
     "winston": "^3.11.0",
     "node-rsa": "^1.1.1",
-    "bcryptjs": "^2.4.3"  }
+    "bcryptjs": "^2.4.3"
+  },
+  "build": {
+    "appId": "com.drivebox.installer",
+    "productName": "DriveBox",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "src/**/*",
+      "node_modules/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": "portable",
+      "icon": "assets/icon.ico"
+    },
+    "mac": {
+      "target": "dmg",
+      "icon": "assets/icon.icns"
+    },
+    "linux": {
+      "target": "AppImage",
+      "icon": "assets/icon.png"
+    }
+  }
 }
