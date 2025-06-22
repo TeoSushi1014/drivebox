@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![DriveBox](https://img.shields.io/badge/DriveBox-v1.2.0-blue?style=for-the-badge&logo=electron)
+![DriveBox](https://img.shields.io/badge/DriveBox-v1.2.2-blue?style=for-the-badge&logo=electron)
 ![Platform](https://img.shields.io/badge/platform-Windows-lightgrey?style=for-the-badge&logo=windows)
 ![License](https://img.shields.io/badge/license-MIT-green?style=for-the-badge)
 
