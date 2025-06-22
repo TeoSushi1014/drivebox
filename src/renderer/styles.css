@@ -1921,8 +1921,7 @@ body {
   outline: none;
   box-shadow: 
     0 0 0 2px var(--color-accent),
-    0 4px 15px rgba(0, 0, 0, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    0 8px 25px rgba(0, 0, 0, 0.15);
 }
 
 .refresh-button__text {
@@ -2115,7 +2114,40 @@ body {
 .contact-icon {
     font-size: 20px;
     width: 30px;
+    height: 30px;
     text-align: center;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+/* Specific icon backgrounds */
+.contact-icon.zalo {
+    background-image: url('../../assets/icons/zalo.png');
+}
+
+.contact-icon.facebook {
+    background-image: url('../../assets/icons/facebook.png');
+}
+
+.contact-icon.github {
+    background-image: url('../../assets/icons/github.png');
+}
+
+.contact-icon.github-project {
+    background-image: url('../../assets/icons/github-project.png');
+}
+
+/* Contact icon hover effects */
+.contact-item-inline:hover .contact-icon {
+    transform: scale(1.1);
+    transition: transform 0.2s ease;
+}
+
+.contact-icon {
+    transition: transform 0.2s ease;
 }
 
 .contact-label {
