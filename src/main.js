@@ -2119,13 +2119,43 @@ ipcMain.handle('check-app-updates', async () => {
     const currentVersion = app.getVersion();
     console.log('Checking for updates, current version:', currentVersion);
     
+    // Skip update check in development mode
+    if (process.argv.includes('--dev')) {
+      console.log('Development mode detected, skipping update check');
+      return { 
+        hasUpdate: false, 
+        currentVersion,
+        latestVersion: currentVersion,
+        skipReason: 'Development mode'
+      };
+    }
+    
     const response = await fetch('https://api.github.com/repos/TeoSushi1014/drivebox/releases/latest', {
       headers: {
-        'User-Agent': 'DriveBox-App'
+        'User-Agent': 'DriveBox-App',
+        'Accept': 'application/vnd.github.v3+json'
       }
     });
     
     if (!response.ok) {
+      // Handle different HTTP status codes
+      if (response.status === 403) {
+        console.warn('GitHub API rate limit exceeded or access denied');
+        return { 
+          hasUpdate: false, 
+          currentVersion,
+          latestVersion: currentVersion,
+          error: 'Rate limit exceeded or access denied. Try again later.'
+        };
+      } else if (response.status === 404) {
+        console.warn('Repository not found or releases not available');
+        return { 
+          hasUpdate: false, 
+          currentVersion,
+          latestVersion: currentVersion,
+          error: 'Repository releases not found'
+        };
+      }
       throw new Error(`GitHub API error: ${response.status}`);
     }
     
@@ -2140,10 +2170,29 @@ ipcMain.handle('check-app-updates', async () => {
       latestVersion: latestRelease.tag_name,
       downloadUrl: latestRelease.assets[0]?.browser_download_url,
       releaseNotes: latestRelease.body || 'No release notes available'
-    };
-  } catch (error) {
+    };  } catch (error) {
     console.error('Update check failed:', error);
-    return { hasUpdate: false, error: error.message };
+    
+    // More specific error handling
+    if (error.message.includes('403')) {
+      return { 
+        hasUpdate: false, 
+        currentVersion: app.getVersion(),
+        error: 'GitHub API access denied. This may be due to rate limiting or repository access restrictions.'
+      };
+    } else if (error.message.includes('fetch')) {
+      return { 
+        hasUpdate: false, 
+        currentVersion: app.getVersion(),
+        error: 'Network error: Unable to connect to GitHub. Please check your internet connection.'
+      };
+    }
+    
+    return { 
+      hasUpdate: false, 
+      currentVersion: app.getVersion(),
+      error: `Update check failed: ${error.message}`
+    };
   }
 });
 
