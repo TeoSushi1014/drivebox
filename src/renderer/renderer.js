@@ -1211,17 +1211,86 @@ class DriveBoxApp {
                             <strong>Có bản cập nhật mới: ${updateInfo.latestVersion}</strong>
                         </div>
                         <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 12px;">
-                            Phiên bản hiện tại: ${updateInfo.currentVersion}
-                        </div>
+                            Phiên bản hiện tại: ${updateInfo.currentVersion}                        </div>
                         <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
-                            <button onclick="app.downloadUpdate('${JSON.stringify(updateInfo).replace(/'/g, '&apos;')}')" class="btn btn-primary" style="font-size: 12px; padding: 6px 12px;">
+                            <button id="downloadUpdateBtn" class="btn btn-primary" style="font-size: 12px; padding: 6px 12px;" data-update-info='${JSON.stringify(updateInfo)}'>
                                 Tải xuống ngay
                             </button>
-                            <button onclick="app.showReleaseNotesModal({version: '${updateInfo.latestVersion}', notes: '${(updateInfo.releaseNotes || '').replace(/'/g, '&apos;').replace(/"/g, '&quot;')}'}) " class="btn btn-secondary" style="font-size: 12px; padding: 6px 12px;">
+                            <button id="viewReleaseNotesBtn" class="btn btn-secondary" style="font-size: 12px; padding: 6px 12px;" data-version="${updateInfo.latestVersion}" data-notes="${(updateInfo.releaseNotes || '').replace(/"/g, '&quot;')}">
                                 Xem chi tiết
                             </button>
                         </div>
                     `;
+                      // Add event listeners for the new buttons
+                    setTimeout(() => {
+                        const downloadBtn = document.getElementById('downloadUpdateBtn');
+                        const releaseNotesBtn = document.getElementById('viewReleaseNotesBtn');
+                        
+                        if (downloadBtn) {
+                            downloadBtn.addEventListener('click', (e) => {
+                                e.preventDefault();
+                                console.log('Download button clicked');
+                                try {
+                                    const updateDataStr = downloadBtn.getAttribute('data-update-info');
+                                    console.log('Update data string:', updateDataStr);
+                                    const updateData = JSON.parse(updateDataStr);
+                                    console.log('Parsed update data:', updateData);
+                                    this.downloadUpdate(updateData);
+                                } catch (error) {
+                                    console.error('Error parsing update data:', error);
+                                    this.downloadUpdate(updateInfo); // Fallback to original updateInfo
+                                }
+                            });
+                        }
+                          if (releaseNotesBtn) {
+                            releaseNotesBtn.addEventListener('click', (e) => {
+                                e.preventDefault();
+                                e.stopPropagation(); // Prevent event bubbling
+                                
+                                // Disable button temporarily to prevent multiple clicks
+                                releaseNotesBtn.disabled = true;
+                                releaseNotesBtn.style.opacity = '0.6';
+                                
+                                console.log('Release notes button clicked');
+                                
+                                setTimeout(() => {
+                                    try {
+                                        const version = releaseNotesBtn.getAttribute('data-version');
+                                        const notesEncoded = releaseNotesBtn.getAttribute('data-notes');
+                                        console.log('Version:', version, 'Notes encoded:', notesEncoded);
+                                        
+                                        // Better decoding of HTML entities
+                                        let notes = notesEncoded || '';
+                                        if (notes) {
+                                            notes = notes
+                                                .replace(/&quot;/g, '"')
+                                                .replace(/&#39;/g, "'")
+                                                .replace(/&amp;/g, '&')
+                                                .replace(/&lt;/g, '<')
+                                                .replace(/&gt;/g, '>');
+                                        }
+                                          console.log('Decoded notes:', notes);
+                                        
+                                        if (!notes || notes.trim() === '') {
+                                            notes = 'Không có thông tin chi tiết về bản cập nhật này.';
+                                        }
+                                        
+                                        // Release notes modal removed
+                                        
+                                    } catch (error) {
+                                        console.error('Error handling release notes:', error);
+                                        // Release notes modal removed
+                                    } finally {
+                                        // Re-enable button after a delay
+                                        setTimeout(() => {
+                                            releaseNotesBtn.disabled = false;
+                                            releaseNotesBtn.style.opacity = '1';
+                                        }, 1000);
+                                    }
+                                }, 50); // Small delay to ensure DOM is ready
+                            });
+                        }
+                    }, 100);
                 }
                 
                 if (!silent) {
@@ -1276,15 +1345,22 @@ class DriveBoxApp {
                 updateStatus.innerHTML = `
                     <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 8px;">
                         <span>❌</span>
-                        <span>Lỗi kiểm tra cập nhật</span>
-                    </div>
+                        <span>Lỗi kiểm tra cập nhật</span>                    </div>
                     <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 8px;">
                         ${error.message}
                     </div>
-                    <button onclick="app.checkForUpdates()" class="btn btn-primary" style="font-size: 12px; padding: 6px 12px;">
+                    <button id="retryUpdateCheckBtn" class="btn btn-primary" style="font-size: 12px; padding: 6px 12px;">
                         Thử lại
                     </button>
                 `;
+                
+                // Add event listener for retry button
+                setTimeout(() => {
+                    const retryBtn = document.getElementById('retryUpdateCheckBtn');
+                    if (retryBtn) {
+                        retryBtn.addEventListener('click', () => this.checkForUpdates());
+                    }
+                }, 100);
                 
                 // Auto-hide error after 10 seconds
                 setTimeout(() => {
@@ -1354,9 +1430,8 @@ class DriveBoxApp {
             this.showToast('Lỗi khi tải cập nhật', 'error');
         }
     }    // Download Update
-    async downloadUpdate(updateInfoStr) {
+    async downloadUpdate(updateInfo) {
         try {
-            const updateInfo = JSON.parse(updateInfoStr.replace(/&apos;/g, "'"));
             const updateStatus = document.getElementById('updateStatus');
             const updateSection = document.getElementById('updateSection');
             
@@ -1405,18 +1480,33 @@ class DriveBoxApp {
                             <span>✅</span>
                             <strong>Cập nhật v${updateInfo.latestVersion} đã tải xong!</strong>
                         </div>
-                        <div style="font-size: 12px; margin-bottom: 12px; color: #4CAF50;">
-                            Khởi động lại ứng dụng để cài đặt cập nhật
+                        <div style="font-size: 12px; margin-bottom: 12px; color: #4CAF50;">                            Khởi động lại ứng dụng để cài đặt cập nhật
                         </div>
                         <div style="display: flex; gap: 8px; justify-content: center;">
-                            <button onclick="app.promptRestart()" class="btn btn-success" style="font-size: 12px; padding: 6px 12px;">
+                            <button id="restartNowBtn" class="btn btn-success" style="font-size: 12px; padding: 6px 12px;">
                                 Khởi động lại ngay
                             </button>
-                            <button onclick="document.getElementById('updateSection').style.display='none'" class="btn btn-secondary" style="font-size: 12px; padding: 6px 12px;">
+                            <button id="restartLaterBtn" class="btn btn-secondary" style="font-size: 12px; padding: 6px 12px;">
                                 Để sau
                             </button>
                         </div>
                     `;
+                    
+                    // Add event listeners
+                    setTimeout(() => {
+                        const restartNowBtn = document.getElementById('restartNowBtn');
+                        const restartLaterBtn = document.getElementById('restartLaterBtn');
+                        
+                        if (restartNowBtn) {
+                            restartNowBtn.addEventListener('click', () => this.promptRestart());
+                        }
+                        
+                        if (restartLaterBtn) {
+                            restartLaterBtn.addEventListener('click', () => {
+                                document.getElementById('updateSection').style.display = 'none';
+                            });
+                        }
+                    }, 100);
                 }
                 
                 this.showToast(`✅ Cập nhật v${updateInfo.latestVersion} đã tải xong! Khởi động lại để cài đặt`, 'success');
@@ -1445,8 +1535,7 @@ class DriveBoxApp {
                 }
                 
                 updateStatus.className = 'update-status error';
-                updateStatus.innerHTML = `
-                    <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 8px;">
+                updateStatus.innerHTML = `                    <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 8px;">
                         <span>❌</span>
                         <strong>Lỗi tải cập nhật</strong>
                     </div>
@@ -1454,14 +1543,30 @@ class DriveBoxApp {
                         ${error.message}
                     </div>
                     <div style="display: flex; gap: 8px; justify-content: center;">
-                        <button onclick="app.checkForUpdates()" class="btn btn-primary" style="font-size: 12px; padding: 6px 12px;">
+                        <button id="retryDownloadBtn" class="btn btn-primary" style="font-size: 12px; padding: 6px 12px;">
                             Thử lại
                         </button>
-                        <button onclick="document.getElementById('updateSection').style.display='none'" class="btn btn-secondary" style="font-size: 12px; padding: 6px 12px;">
+                        <button id="closeDownloadBtn" class="btn btn-secondary" style="font-size: 12px; padding: 6px 12px;">
                             Đóng
                         </button>
                     </div>
                 `;
+                
+                // Add event listeners
+                setTimeout(() => {
+                    const retryBtn = document.getElementById('retryDownloadBtn');
+                    const closeBtn = document.getElementById('closeDownloadBtn');
+                    
+                    if (retryBtn) {
+                        retryBtn.addEventListener('click', () => this.checkForUpdates());
+                    }
+                    
+                    if (closeBtn) {
+                        closeBtn.addEventListener('click', () => {
+                            document.getElementById('updateSection').style.display = 'none';
+                        });
+                    }
+                }, 100);
             }
             
             this.showToast(`❌ Lỗi tải cập nhật: ${error.message}`, 'error');
@@ -1480,14 +1585,12 @@ class DriveBoxApp {
             window.electronAPI.onUpdateDownloadProgress((progressData) => {
                 this.updateDownloadProgress(progressData);
             });
-        }
-        
+        }        
         if (window.electronAPI.onShowReleaseNotes) {
             window.electronAPI.onShowReleaseNotes((releaseData) => {
-                this.showReleaseNotesModal(releaseData);
+                // Release notes modal removed
             });
         }
-        
         if (window.electronAPI.onUpdateDownloadError) {
             window.electronAPI.onUpdateDownloadError((errorData) => {
                 this.handleUpdateDownloadError(errorData);
@@ -1521,193 +1624,97 @@ class DriveBoxApp {
         if (progressSpeed && progressData.speed) {
             progressSpeed.textContent = progressData.speed;
         }
-    }
-
-    // Show release notes modal
-    showReleaseNotesModal(releaseData) {
-        // Remove existing modal if any
-        const existingModal = document.querySelector('.release-notes-modal');
-        if (existingModal) {
-            existingModal.remove();
+    }    // Format release notes to HTML
+    formatReleaseNotes(notes) {
+        if (!notes || typeof notes !== 'string') {
+            return '<p>Không có thông tin chi tiết.</p>';
         }
         
-        // Create modal backdrop
-        const modalBackdrop = document.createElement('div');
-        modalBackdrop.className = 'modal-backdrop';
-        modalBackdrop.style.cssText = `
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(10px);
-            z-index: 10000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            animation: fadeIn 0.3s ease;
-        `;
+        console.log('Original notes:', notes);
         
-        // Create modal content
-        const modal = document.createElement('div');
-        modal.className = 'release-notes-modal';
-        modal.style.cssText = `
-            background: var(--bg-color);
-            border-radius: 12px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-            max-width: 600px;
-            max-height: 80vh;
-            width: 90%;
-            overflow: hidden;
-            animation: scaleIn 0.3s ease;
-            border: 1px solid var(--border-color);
-        `;
+        // Clean up and prepare the text
+        let formatted = notes
+            .trim()
+            // First, handle line breaks properly
+            .replace(/\r\n/g, '\n')
+            .replace(/\r/g, '\n');
         
-        modal.innerHTML = `
-            <div class="modal-header" style="
-                padding: 20px 24px 16px;
-                border-bottom: 1px solid var(--border-color);
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-            ">
-                <div>
-                    <h2 style="margin: 0; color: var(--text-color); font-size: 20px; display: flex; align-items: center; gap: 8px;">
-                        🎉 Cập nhật mới v${releaseData.version}
-                    </h2>
-                    <p style="margin: 4px 0 0; color: var(--text-secondary); font-size: 14px;">
-                        Phiên bản mới đã có sẵn
-                    </p>
-                </div>
-                <button class="close-modal" style="
-                    background: none;
-                    border: none;
-                    font-size: 24px;
-                    cursor: pointer;
-                    color: var(--text-secondary);
-                    padding: 4px;
-                    border-radius: 4px;
-                    transition: all 0.2s;
-                ">×</button>
-            </div>
-            <div class="modal-body" style="
-                padding: 20px 24px;
-                max-height: 50vh;
-                overflow-y: auto;
-                line-height: 1.6;
-                color: var(--text-color);
-            ">
-                <div class="release-notes-content">
-                    ${releaseData.notes}
-                </div>
-            </div>
-            <div class="modal-footer" style="
-                padding: 16px 24px 20px;
-                border-top: 1px solid var(--border-color);
-                display: flex;
-                gap: 12px;
-                justify-content: flex-end;
-            ">
-                <button class="btn btn-secondary close-modal" style="font-size: 14px; padding: 8px 16px;">
-                    Để sau
-                </button>
-                <button class="btn btn-primary start-download" style="font-size: 14px; padding: 8px 16px;">
-                    Tải xuống ngay
-                </button>
-            </div>
-        `;
+        // Convert markdown to HTML step by step
+        formatted = formatted
+            // Convert headers (must be at start of line)
+            .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+            .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+            .replace(/^# (.+)$/gm, '<h1>$1</h1>')
+            
+            // Convert bold and italic
+            .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+            .replace(/\*(.+?)\*/g, '<em>$1</em>')
+            .replace(/__(.+?)__/g, '<strong>$1</strong>')
+            .replace(/_(.+?)_/g, '<em>$1</em>')
+            
+            // Convert inline code
+            .replace(/`([^`]+)`/g, '<code>$1</code>')
+            
+            // Convert links
+            .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
+            
+            // Convert bullet points (- or * at start of line)
+            .replace(/^[\-\*] (.+)$/gm, '<li>$1</li>')
+            
+            // Convert numbered lists
+            .replace(/^\d+\. (.+)$/gm, '<li>$1</li>');
         
-        // Add styles for the modal animations
-        const style = document.createElement('style');
-        style.textContent = `
-            @keyframes fadeIn {
-                from { opacity: 0; }
-                to { opacity: 1; }
-            }
-            @keyframes scaleIn {
-                from { transform: scale(0.9); opacity: 0; }
-                to { transform: scale(1); opacity: 1; }
-            }
-            .release-notes-content h1, .release-notes-content h2, .release-notes-content h3 {
-                color: var(--text-color);
-                margin: 16px 0 8px;
-            }
-            .release-notes-content h1 { font-size: 18px; }
-            .release-notes-content h2 { font-size: 16px; }
-            .release-notes-content h3 { font-size: 14px; }
-            .release-notes-content ul {
-                padding-left: 20px;
-                margin: 8px 0;
-            }
-            .release-notes-content li {
-                margin: 4px 0;
-            }
-            .release-notes-content code {
-                background: var(--bg-secondary);
-                padding: 2px 4px;
-                border-radius: 3px;
-                font-family: 'Consolas', 'Monaco', monospace;
-                font-size: 12px;
-            }
-            .release-notes-content pre {
-                background: var(--bg-secondary);
-                padding: 12px;
-                border-radius: 6px;
-                overflow-x: auto;
-                margin: 8px 0;
-            }
-            .release-notes-content strong {
-                font-weight: 600;
-            }
-            .release-notes-content a {
-                color: var(--primary-color);
-                text-decoration: none;
-            }
-            .release-notes-content a:hover {
-                text-decoration: underline;
-            }
-            .close-modal:hover {
-                background: var(--hover-color) !important;
-            }
-        `;
-        document.head.appendChild(style);
+        // Clean up empty lines and convert to paragraphs
+        const lines = formatted.split('\n');
+        const processedLines = [];
+        let currentParagraph = '';
+        let inList = false;
         
-        modalBackdrop.appendChild(modal);
-        document.body.appendChild(modalBackdrop);
-        
-        // Handle close events
-        const closeButtons = modal.querySelectorAll('.close-modal');
-        closeButtons.forEach(btn => {
-            btn.addEventListener('click', () => {
-                modalBackdrop.style.animation = 'fadeIn 0.3s ease reverse';
-                setTimeout(() => modalBackdrop.remove(), 300);
-            });
-        });
-        
-        // Handle download button
-        const downloadBtn = modal.querySelector('.start-download');
-        if (downloadBtn && releaseData.downloadUrl) {
-            downloadBtn.addEventListener('click', () => {
-                // Close modal first
-                modalBackdrop.style.animation = 'fadeIn 0.3s ease reverse';
-                setTimeout(() => modalBackdrop.remove(), 300);
-                
-                // Then start download if we have the update info in the status
-                const updateStatus = document.getElementById('updateStatus');
-                if (updateStatus && updateStatus.querySelector('button[onclick*="downloadUpdate"]')) {
-                    updateStatus.querySelector('button[onclick*="downloadUpdate"]').click();
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i].trim();
+            
+            // Check if we're entering or leaving a list
+            if (line.includes('<li>')) {
+                if (currentParagraph.trim()) {
+                    processedLines.push(`<p>${currentParagraph}</p>`);
+                    currentParagraph = '';
                 }
-            });
+                if (!inList) {
+                    processedLines.push('<ul>');
+                    inList = true;
+                }
+                processedLines.push(line);
+            } else if (inList && !line.includes('<li>') && line !== '') {
+                processedLines.push('</ul>');
+                inList = false;
+                currentParagraph = line;
+            } else if (line.match(/^<h[1-6]>/) || line === '' || line.match(/^<\/h[1-6]>$/)) {
+                // Headers or empty lines
+                if (currentParagraph.trim()) {
+                    processedLines.push(`<p>${currentParagraph}</p>`);
+                    currentParagraph = '';
+                }
+                if (line !== '') {
+                    processedLines.push(line);
+                }
+            } else {
+                // Regular text
+                if (currentParagraph) {
+                    currentParagraph += ' ' + line;
+                } else {
+                    currentParagraph = line;
+                }
+            }
         }
         
-        // Close on backdrop click
-        modalBackdrop.addEventListener('click', (e) => {
-            if (e.target === modalBackdrop) {
-                modalBackdrop.style.animation = 'fadeIn 0.3s ease reverse';
-                setTimeout(() => modalBackdrop.remove(), 300);
-            }
-        });
+        // Close any remaining paragraph or list
+        if (currentParagraph.trim()) {
+            processedLines.push(`<p>${currentParagraph}</p>`);
+        }        if (inList) {
+            processedLines.push('</ul>');
+        }
+          const result = processedLines.join('\n');
+          return result || '<p>Không có thông tin chi tiết.</p>';
     }
 
     // Handle update download error
@@ -1725,22 +1732,37 @@ class DriveBoxApp {
             <div class="restart-content">
                 <div class="restart-header">
                     <span>🔄</span>
-                    <strong>Cập nhật sẵn sàng</strong>
-                </div>
+                    <strong>Cập nhật sẵn sàng</strong>                </div>
                 <div class="restart-body">
                     Cập nhật v${version} đã được tải xuống và sẵn sàng cài đặt.
                     Bạn có muốn khởi động lại ngay bây giờ?
                 </div>
                 <div class="restart-actions" style="margin-top: 12px; display: flex; gap: 8px;">
-                    <button onclick="app.promptRestart()" class="btn btn-success" style="font-size: 12px; padding: 6px 12px;">
+                    <button id="restartAppBtn" class="btn btn-success" style="font-size: 12px; padding: 6px 12px;">
                         Khởi động lại
                     </button>
-                    <button onclick="this.closest('.restart-notification').remove()" class="btn btn-secondary" style="font-size: 12px; padding: 6px 12px;">
+                    <button id="dismissRestartBtn" class="btn btn-secondary" style="font-size: 12px; padding: 6px 12px;">
                         Để sau
                     </button>
                 </div>
             </div>
         `;
+        
+        // Add event listeners after creating the notification
+        setTimeout(() => {
+            const restartBtn = document.getElementById('restartAppBtn');
+            const dismissBtn = document.getElementById('dismissRestartBtn');
+            
+            if (restartBtn) {
+                restartBtn.addEventListener('click', () => this.promptRestart());
+            }
+            
+            if (dismissBtn) {
+                dismissBtn.addEventListener('click', () => {
+                    notification.remove();
+                });
+            }
+        }, 100);
         
         document.body.appendChild(notification);
         
@@ -1786,7 +1808,14 @@ let app; // Make app globally accessible
 
 document.addEventListener('DOMContentLoaded', () => {
     app = new DriveBoxApp();
-    
+      // Expose app to window object for HTML onclick events
+    window.app = app;
+      // Add global helper functions for button compatibility
+    window.downloadUpdate = (updateInfo) => {
+        if (app && app.downloadUpdate) {
+            app.downloadUpdate(updateInfo);
+        }
+    };      
     // Check electronAPI availability on startup
     const apiCheck = app.checkElectronAPI();
     if (!apiCheck.available) {
