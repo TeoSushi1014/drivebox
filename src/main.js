@@ -2176,16 +2176,7 @@ ipcMain.handle('check-app-updates', async () => {
     const currentVersion = app.getVersion();
     console.log('Checking for updates, current version:', currentVersion);
     
-    // Skip update check in development mode
-    if (process.argv.includes('--dev')) {
-      console.log('Development mode detected, skipping update check');
-      return { 
-        hasUpdate: false, 
-        currentVersion,
-        latestVersion: currentVersion,
-        skipReason: 'Development mode'
-      };
-    }
+    // Allow update check in development mode
     
     const response = await fetch('https://api.github.com/repos/TeoSushi1014/drivebox/releases/latest', {
       headers: {
@@ -2259,43 +2250,62 @@ ipcMain.handle('download-app-update', async (event, updateInfo) => {
     if (!updateInfo.downloadUrl) {
       throw new Error('No download URL provided');
     }
-    
     console.log('Starting app update download...');
-    
     // Create temp directory for update
     const tempDir = path.join(os.tmpdir(), 'drivebox-update');
     if (!fs.existsSync(tempDir)) {
       fs.mkdirSync(tempDir, { recursive: true });
     }
-    
     const fileName = `drivebox-${updateInfo.latestVersion}.exe`;
     const filePath = path.join(tempDir, fileName);
-    
     // Download the update
     const response = await fetch(updateInfo.downloadUrl);
     if (!response.ok) {
       throw new Error(`Download failed: ${response.status}`);
     }
-    
     const fileStream = fs.createWriteStream(filePath);
     response.body.pipe(fileStream);
-    
+    // Format release notes (Markdown to HTML)
+    let formattedReleaseNotes = updateInfo.releaseNotes || '';
+    try {
+      // Simple Markdown to HTML conversion for basic formatting
+      formattedReleaseNotes = formattedReleaseNotes
+        .replace(/\r\n|\r|\n/g, '\n')
+        .replace(/\n{2,}/g, '</p><p>')
+        .replace(/\n/g, '<br>')
+        .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
+        .replace(/\*(.*?)\*/g, '<i>$1</i>')
+        .replace(/\#\s(.+)/g, '<h2>$1</h2>')
+        .replace(/\-\s(.+)/g, '<li>$1</li>');
+      if (formattedReleaseNotes.includes('<li>')) {
+        formattedReleaseNotes = formattedReleaseNotes.replace(/(<li>.*<\/li>)/gs, '<ul>$1</ul>');
+      }
+      formattedReleaseNotes = `<p>${formattedReleaseNotes}</p>`;
+    } catch (e) {
+      // Fallback to plain text
+    }
+    // Send release notes to renderer for display
+    if (mainWindow && mainWindow.webContents) {
+      mainWindow.webContents.send('show-release-notes', {
+        version: updateInfo.latestVersion,
+        notes: formattedReleaseNotes
+      });
+    }
     return new Promise((resolve, reject) => {
       fileStream.on('finish', () => {
         console.log('Update downloaded successfully');
         resolve({ 
           success: true, 
           filePath: filePath,
-          message: 'Update downloaded successfully' 
+          message: 'Update downloaded successfully',
+          releaseNotes: formattedReleaseNotes
         });
       });
-      
       fileStream.on('error', (error) => {
         console.error('Update download error:', error);
         reject(error);
       });
     });
-    
   } catch (error) {
     console.error('Update download failed:', error);
     return { success: false, error: error.message };
