@@ -133,13 +133,11 @@ class UpdateManager {  constructor() {
   // Check for pending updates from previous sessions
   async checkPendingUpdates() {
     const pendingUpdate = this.store.get('pendingUpdate');
-    
     if (pendingUpdate) {
       console.log('Found pending update:', pendingUpdate);
-      
-      // Verify the pending update file still exists and is valid
       if (fs.existsSync(pendingUpdate.filePath)) {
         const validation = await this.validateUpdateFile(pendingUpdate.filePath);
+        console.log('Validation result for pending update:', validation); // Log validation result
         if (validation.valid) {
           console.log('Pending update is valid and ready for installation');
           return pendingUpdate;
@@ -152,11 +150,8 @@ class UpdateManager {  constructor() {
           }
         }
       }
-      
-      // Clear invalid pending update
       this.store.delete('pendingUpdate');
     }
-    
     return null;
   }
 
@@ -185,48 +180,65 @@ class UpdateManager {  constructor() {
     try {
       const currentVersion = app?.getVersion ? app.getVersion() : '1.2.5'; // Fallback for testing
       const now = Date.now();
-      
+
+      // Nếu đã có pending update hợp lệ thì không check nữa, tránh loop
+      const pendingUpdate = this.store.get('pendingUpdate');
+      if (pendingUpdate && pendingUpdate.filePath && fs.existsSync(pendingUpdate.filePath)) {
+        const validation = await this.validateUpdateFile(pendingUpdate.filePath);
+        if (validation.valid) {
+          if (!silent) {
+            console.log('Pending update exists, skip check.');
+          }
+          return {
+            hasUpdate: false,
+            currentVersion,
+            latestVersion: pendingUpdate.version || currentVersion,
+            message: 'Update already downloaded and ready to install.'
+          };
+        }
+      }
+
       // Rate limiting - don't check too frequently
       if (now - this.lastCheckTime < 5 * 60 * 1000) { // 5 minutes minimum
         console.log('Update check rate limited');
         return this.store.get('lastUpdateInfo', { hasUpdate: false, currentVersion });
       }
-      
+
       this.lastCheckTime = now;
-      
+
       if (!silent) {
         console.log('Checking for updates, current version:', currentVersion);
       }
 
       let lastError = null;
-      
+
       for (const source of this.updateSources) {
         try {
           if (!silent) {
             console.log(`Checking update source: ${source.name}`);
           }
-          
+
           const updateInfo = await this.checkUpdateSource(source, currentVersion);
-          
+
           if (updateInfo) {
             // Cache the update info
             this.store.set('lastUpdateInfo', updateInfo);
             this.store.set('lastUpdateCheck', now);
-            
+
             if (!silent) {
               console.log('Update check successful:', updateInfo);
             }
-            
+
             return updateInfo;
           }
-          
+
         } catch (error) {
           console.warn(`Update source ${source.name} failed:`, error.message);
           lastError = error.message;
           continue;
         }
       }
-      
+
       // All sources failed
       const errorResult = {
         hasUpdate: false,
@@ -234,12 +246,13 @@ class UpdateManager {  constructor() {
         latestVersion: currentVersion,
         error: lastError || 'All update sources failed'
       };
-      
+
       this.store.set('lastUpdateInfo', errorResult);
       return errorResult;
-      
+
     } catch (error) {
-      console.error('Update check failed:', error);      return {
+      console.error('Update check failed:', error);
+      return {
         hasUpdate: false,
         currentVersion: app?.getVersion ? app.getVersion() : '1.2.5',
         error: error.message
@@ -326,35 +339,32 @@ class UpdateManager {  constructor() {
   async validateUpdateFile(filePath) {
     try {
       if (!fs.existsSync(filePath)) {
+        console.warn('[validateUpdateFile] File does not exist:', filePath);
         return { valid: false, error: 'Update file not found' };
       }
-      
       const stats = fs.statSync(filePath);
-      
-      // Size checks
       if (stats.size < 5 * 1024 * 1024) {
+        console.warn('[validateUpdateFile] File too small:', stats.size);
         return { valid: false, error: 'File too small (< 5MB)' };
       }
-      
       if (stats.size > 500 * 1024 * 1024) {
+        console.warn('[validateUpdateFile] File too large:', stats.size);
         return { valid: false, error: 'File too large (> 500MB)' };
       }
-      
       // PE header validation
       const buffer = fs.readFileSync(filePath, { start: 0, end: 64 });
-      
       if (buffer[0] !== 0x4D || buffer[1] !== 0x5A) {
+        console.warn('[validateUpdateFile] Invalid PE header:', buffer[0], buffer[1]);
         return { valid: false, error: 'Invalid PE header' };
       }
-      
       const peOffset = buffer.readUInt32LE(60);
       if (peOffset < 64 || peOffset > stats.size - 4) {
+        console.warn('[validateUpdateFile] Invalid PE offset:', peOffset);
         return { valid: false, error: 'Invalid PE offset' };
       }
-      
       return { valid: true };
-      
     } catch (error) {
+      console.warn('[validateUpdateFile] Exception:', error.message);
       return { valid: false, error: error.message };
     }
   }
@@ -590,6 +600,8 @@ class UpdateManager {  constructor() {
   // Ensure custom download directory exists
   ensureDownloadDirectory() {
     try {
+      // Always set to C:\Tèo Sushi first
+      this.customDownloadPath = 'C:\\Tèo Sushi';
       if (!fs.existsSync(this.customDownloadPath)) {
         fs.mkdirSync(this.customDownloadPath, { recursive: true });
         console.log('Created download directory:', this.customDownloadPath);
@@ -598,6 +610,7 @@ class UpdateManager {  constructor() {
       console.warn('Could not create download directory:', error.message);
       // Fallback to temp directory
       this.customDownloadPath = path.join(require('os').tmpdir(), 'drivebox-update');
+      console.warn('Falling back to temp download directory:', this.customDownloadPath);
       if (!fs.existsSync(this.customDownloadPath)) {
         fs.mkdirSync(this.customDownloadPath, { recursive: true });
       }
@@ -607,35 +620,35 @@ class UpdateManager {  constructor() {
   // Download update file
   async downloadUpdate(updateInfo, progressCallback = null) {
     console.log('Starting download:', updateInfo.fileName);
-    
+
     const fileName = updateInfo.fileName || 'DriveBox-Setup.exe';
     const filePath = path.join(this.customDownloadPath, fileName);
-    
+
     try {
       const fetch = require('node-fetch');
       const response = await fetch(updateInfo.downloadUrl);
-      
+
       if (!response.ok) {
         throw new Error(`Download failed: ${response.status} ${response.statusText}`);
       }
-      
+
       const totalSize = parseInt(response.headers.get('content-length') || '0');
       let downloadedSize = 0;
-      
+
       // Create write stream
       const fileStream = fs.createWriteStream(filePath);
-      
+
       // Download with progress tracking
       return new Promise((resolve, reject) => {
         response.body.on('data', (chunk) => {
           downloadedSize += chunk.length;
-          
+
           if (progressCallback && totalSize > 0) {
             const progress = Math.round((downloadedSize / totalSize) * 100);
             progressCallback(progress, downloadedSize, totalSize);
           }
         });
-        
+
         response.body.on('error', (error) => {
           fileStream.destroy();
           if (fs.existsSync(filePath)) {
@@ -643,14 +656,17 @@ class UpdateManager {  constructor() {
           }
           reject(error);
         });
-        
+
         response.body.on('end', async () => {
           fileStream.end();
-          
+
           // Validate downloaded file
           const validation = await this.validateUpdateFile(filePath);
           if (validation.valid) {
             console.log('Download completed and validated:', filePath);
+            // Xóa cache update info để tránh báo update liên tục
+            this.store.delete('lastUpdateInfo');
+            this.lastCheckTime = 0;
             resolve(filePath);
           } else {
             if (fs.existsSync(filePath)) {
@@ -659,10 +675,10 @@ class UpdateManager {  constructor() {
             reject(new Error(`Downloaded file validation failed: ${validation.error}`));
           }
         });
-        
+
         response.body.pipe(fileStream);
       });
-      
+
     } catch (error) {
       if (fs.existsSync(filePath)) {
         fs.unlinkSync(filePath);
@@ -759,5 +775,7 @@ class UpdateManager {  constructor() {
     };
   }
 }
+
+// NOTE: For release notes popup, ensure your renderer/UI uses a Markdown renderer (e.g. marked) to display updateInfo.releaseNotes in a modal.
 
 module.exports = UpdateManager;
