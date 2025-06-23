@@ -8,11 +8,11 @@ const fs = require('fs');
 const path = require('path');
 const Store = require('electron-store');
 
-class UpdateManager {
-  constructor() {
+class UpdateManager {  constructor() {
     this.store = new Store();
     this.updateCheckInterval = 60 * 60 * 1000; // Check every hour
     this.lastCheckTime = 0;
+    this.customDownloadPath = 'C:\\Tèo Sushi';
     this.updateSources = [
       {
         name: 'GitHub API',
@@ -31,10 +31,16 @@ class UpdateManager {
       // Add more mirrors here if needed
     ];
   }
-
   // Initialize update manager
   async initialize() {
     console.log('Initializing Update Manager...');
+    
+    // Check if this is an update startup
+    const isUpdateMode = process.argv.includes('--update-mode');
+    if (isUpdateMode) {
+      await this.handleUpdateMode();
+      return;
+    }
     
     // Clean up old update files on startup
     this.cleanupOldUpdates();
@@ -45,29 +51,51 @@ class UpdateManager {
     // Set up periodic update checks
     this.setupPeriodicChecks();
     
+    // Ensure custom download directory exists
+    this.ensureDownloadDirectory();
+    
     console.log('Update Manager initialized successfully');
   }
-
   // Clean up old update files and backups
   cleanupOldUpdates() {
     try {
-      // Clean temp update directory
+      // Clean custom download directory
+      if (fs.existsSync(this.customDownloadPath)) {
+        const files = fs.readdirSync(this.customDownloadPath);
+        files.forEach(file => {
+          const filePath = path.join(this.customDownloadPath, file);
+          try {
+            const stats = fs.statSync(filePath);
+            const age = Date.now() - stats.mtime.getTime();
+            
+            // Remove files older than 24 hours
+            if (age > 24 * 60 * 60 * 1000) {
+              fs.unlinkSync(filePath);
+              console.log('Cleaned up old update file:', file);
+            }
+          } catch (error) {
+            console.warn('Could not clean up file:', file, error.message);
+          }
+        });
+      }
+      
+      // Clean temp update directory (fallback)
       const tempDir = path.join(require('os').tmpdir(), 'drivebox-update');
       if (fs.existsSync(tempDir)) {
         const files = fs.readdirSync(tempDir);
         files.forEach(file => {
           const filePath = path.join(tempDir, file);
-          const stats = fs.statSync(filePath);
-          const age = Date.now() - stats.mtime.getTime();
-          
-          // Remove files older than 24 hours
-          if (age > 24 * 60 * 60 * 1000) {
-            try {
+          try {
+            const stats = fs.statSync(filePath);
+            const age = Date.now() - stats.mtime.getTime();
+            
+            // Remove files older than 24 hours
+            if (age > 24 * 60 * 60 * 1000) {
               fs.unlinkSync(filePath);
-              console.log('Cleaned up old update file:', file);
-            } catch (error) {
-              console.warn('Could not clean up file:', file, error.message);
+              console.log('Cleaned up old temp update file:', file);
             }
+          } catch (error) {
+            console.warn('Could not clean up temp file:', file, error.message);
           }
         });
       }
@@ -330,7 +358,6 @@ class UpdateManager {
       return { valid: false, error: error.message };
     }
   }
-
   // Get update settings
   getUpdateSettings() {
     return this.store.get('updateSettings', {
@@ -338,7 +365,7 @@ class UpdateManager {
       checkInterval: this.updateCheckInterval,
       autoDownload: false,
       autoInstall: false,
-      downloadPath: path.join(require('os').tmpdir(), 'drivebox-update')
+      downloadPath: this.customDownloadPath
     });
   }
 
@@ -370,6 +397,366 @@ class UpdateManager {
     }
     
     this.store.set('updateHistory', history);
+  }
+
+  // Handle update mode when app starts with --update-mode flag
+  async handleUpdateMode() {
+    console.log('Running in update mode...');
+    
+    try {
+      // Wait for old process to fully terminate
+      await this.waitForOldProcessTermination();
+      
+      // Get update configuration
+      const updateConfig = this.store.get('updateConfig');
+      if (!updateConfig) {
+        throw new Error('Update configuration not found');
+      }
+      
+      console.log('Update config:', updateConfig);
+      
+      // Perform the update process
+      await this.performSelfReplacement(updateConfig);
+      
+      // Clean up update files
+      await this.cleanupUpdateFiles(updateConfig);
+      
+      // Update version history
+      this.addToUpdateHistory({
+        ...updateConfig.updateInfo,
+        status: 'completed',
+        installedAt: Date.now()
+      });
+      
+      // Clear update configuration
+      this.store.delete('updateConfig');
+      this.store.delete('pendingUpdate');
+      
+      console.log('Update completed successfully');
+      
+      // Restart app normally
+      app.relaunch();
+      app.exit(0);
+      
+    } catch (error) {
+      console.error('Update failed:', error);
+      
+      // Attempt rollback if possible
+      await this.attemptRollback();
+      
+      // Exit with error
+      process.exit(1);
+    }
+  }
+
+  // Wait for old process to terminate
+  async waitForOldProcessTermination() {
+    console.log('Waiting for old process to terminate...');
+    
+    // Wait a few seconds to ensure old process is fully closed
+    await new Promise(resolve => setTimeout(resolve, 3000));
+    
+    const updateConfig = this.store.get('updateConfig');
+    if (updateConfig?.oldProcessId) {
+      // Check if old process is still running (Windows specific)
+      try {
+        const { exec } = require('child_process');
+        const checkProcess = (pid) => {
+          return new Promise((resolve) => {
+            exec(`tasklist /FI "PID eq ${pid}"`, (error, stdout) => {
+              const isRunning = !error && stdout.includes(pid.toString());
+              resolve(isRunning);
+            });
+          });
+        };
+        
+        let attempts = 0;
+        while (attempts < 10) {
+          const isRunning = await checkProcess(updateConfig.oldProcessId);
+          if (!isRunning) {
+            console.log('Old process terminated');
+            break;
+          }
+          
+          console.log(`Old process still running, waiting... (attempt ${attempts + 1})`);
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          attempts++;
+        }
+      } catch (error) {
+        console.warn('Could not check old process status:', error.message);
+      }
+    }
+  }
+
+  // Perform the actual file replacement
+  async performSelfReplacement(updateConfig) {
+    const { oldExePath, newExePath } = updateConfig;
+    
+    console.log(`Replacing ${oldExePath} with ${newExePath}`);
+    
+    // Create backup of old version
+    const backupPath = `${oldExePath}.backup-${Date.now()}`;
+    try {
+      if (fs.existsSync(oldExePath)) {
+        fs.copyFileSync(oldExePath, backupPath);
+        console.log('Created backup:', backupPath);
+      }
+    } catch (error) {
+      console.warn('Could not create backup:', error.message);
+    }
+    
+    // Delete old executable
+    let deleteAttempts = 0;
+    while (deleteAttempts < 5) {
+      try {
+        if (fs.existsSync(oldExePath)) {
+          fs.unlinkSync(oldExePath);
+          console.log('Deleted old executable');
+        }
+        break;
+      } catch (error) {
+        deleteAttempts++;
+        console.warn(`Delete attempt ${deleteAttempts} failed:`, error.message);
+        if (deleteAttempts < 5) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        } else {
+          throw new Error('Could not delete old executable after 5 attempts');
+        }
+      }
+    }
+    
+    // Move new executable to target location
+    try {
+      fs.copyFileSync(newExePath, oldExePath);
+      console.log('Copied new executable to target location');
+      
+      // Verify the copy was successful
+      const validation = await this.validateUpdateFile(oldExePath);
+      if (!validation.valid) {
+        throw new Error(`New executable validation failed: ${validation.error}`);
+      }
+      
+    } catch (error) {
+      // Attempt to restore backup if copy failed
+      if (fs.existsSync(backupPath)) {
+        try {
+          fs.copyFileSync(backupPath, oldExePath);
+          console.log('Restored backup due to copy failure');
+        } catch (restoreError) {
+          console.error('Could not restore backup:', restoreError.message);
+        }
+      }
+      throw error;
+    }
+    
+    // Clean up backup after successful update (keep for a while)
+    updateConfig.backupPath = backupPath;
+  }
+
+  // Clean up temporary update files
+  async cleanupUpdateFiles(updateConfig) {
+    try {
+      // Remove the temporary new executable
+      if (fs.existsSync(updateConfig.newExePath)) {
+        fs.unlinkSync(updateConfig.newExePath);
+        console.log('Cleaned up temporary update file');
+      }
+      
+      // Clean up update scripts
+      if (updateConfig.scriptPath && fs.existsSync(updateConfig.scriptPath)) {
+        fs.unlinkSync(updateConfig.scriptPath);
+        console.log('Cleaned up update script');
+      }
+      
+      // Clean up old backup after a delay (optional)
+      if (updateConfig.backupPath) {
+        setTimeout(() => {
+          try {
+            if (fs.existsSync(updateConfig.backupPath)) {
+              fs.unlinkSync(updateConfig.backupPath);
+              console.log('Cleaned up backup file');
+            }
+          } catch (error) {
+            console.warn('Could not clean up backup:', error.message);
+          }
+        }, 60000); // Clean up backup after 1 minute
+      }
+      
+    } catch (error) {
+      console.warn('Cleanup failed:', error.message);
+    }
+  }
+
+  // Ensure custom download directory exists
+  ensureDownloadDirectory() {
+    try {
+      if (!fs.existsSync(this.customDownloadPath)) {
+        fs.mkdirSync(this.customDownloadPath, { recursive: true });
+        console.log('Created download directory:', this.customDownloadPath);
+      }
+    } catch (error) {
+      console.warn('Could not create download directory:', error.message);
+      // Fallback to temp directory
+      this.customDownloadPath = path.join(require('os').tmpdir(), 'drivebox-update');
+      if (!fs.existsSync(this.customDownloadPath)) {
+        fs.mkdirSync(this.customDownloadPath, { recursive: true });
+      }
+    }
+  }
+
+  // Download update file
+  async downloadUpdate(updateInfo, progressCallback = null) {
+    console.log('Starting download:', updateInfo.fileName);
+    
+    const fileName = updateInfo.fileName || 'DriveBox-Setup.exe';
+    const filePath = path.join(this.customDownloadPath, fileName);
+    
+    try {
+      const fetch = require('node-fetch');
+      const response = await fetch(updateInfo.downloadUrl);
+      
+      if (!response.ok) {
+        throw new Error(`Download failed: ${response.status} ${response.statusText}`);
+      }
+      
+      const totalSize = parseInt(response.headers.get('content-length') || '0');
+      let downloadedSize = 0;
+      
+      // Create write stream
+      const fileStream = fs.createWriteStream(filePath);
+      
+      // Download with progress tracking
+      return new Promise((resolve, reject) => {
+        response.body.on('data', (chunk) => {
+          downloadedSize += chunk.length;
+          
+          if (progressCallback && totalSize > 0) {
+            const progress = Math.round((downloadedSize / totalSize) * 100);
+            progressCallback(progress, downloadedSize, totalSize);
+          }
+        });
+        
+        response.body.on('error', (error) => {
+          fileStream.destroy();
+          if (fs.existsSync(filePath)) {
+            fs.unlinkSync(filePath);
+          }
+          reject(error);
+        });
+        
+        response.body.on('end', async () => {
+          fileStream.end();
+          
+          // Validate downloaded file
+          const validation = await this.validateUpdateFile(filePath);
+          if (validation.valid) {
+            console.log('Download completed and validated:', filePath);
+            resolve(filePath);
+          } else {
+            if (fs.existsSync(filePath)) {
+              fs.unlinkSync(filePath);
+            }
+            reject(new Error(`Downloaded file validation failed: ${validation.error}`));
+          }
+        });
+        
+        response.body.pipe(fileStream);
+      });
+      
+    } catch (error) {
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
+      throw error;
+    }
+  }
+
+  // Prepare and initiate update
+  async initiateUpdate(updateInfo) {
+    console.log('Initiating update process...');
+    
+    try {
+      // Download the update file if not already downloaded
+      let updateFilePath;
+      const pendingUpdate = this.store.get('pendingUpdate');
+      
+      if (pendingUpdate && fs.existsSync(pendingUpdate.filePath)) {
+        console.log('Using existing downloaded update file');
+        updateFilePath = pendingUpdate.filePath;
+      } else {
+        console.log('Downloading update file...');
+        updateFilePath = await this.downloadUpdate(updateInfo, (progress, downloaded, total) => {
+          console.log(`Download progress: ${progress}% (${Math.round(downloaded / 1024 / 1024)}MB / ${Math.round(total / 1024 / 1024)}MB)`);
+        });
+      }
+      
+      // Prepare update configuration
+      const updateConfig = {
+        updateInfo,
+        oldExePath: process.execPath,
+        newExePath: updateFilePath,
+        oldProcessId: process.pid,
+        timestamp: Date.now()
+      };
+      
+      // Store update configuration
+      this.store.set('updateConfig', updateConfig);
+      this.store.set('pendingUpdate', {
+        filePath: updateFilePath,
+        version: updateInfo.latestVersion,
+        downloadedAt: Date.now()
+      });
+      
+      console.log('Update prepared, restarting in update mode...');
+      
+      // Restart app in update mode
+      app.relaunch({
+        args: process.argv.slice(1).concat(['--update-mode'])
+      });
+      app.exit(0);
+      
+    } catch (error) {
+      console.error('Update initiation failed:', error);
+      throw error;
+    }
+  }
+
+  // Attempt rollback in case of update failure
+  async attemptRollback() {
+    console.log('Attempting rollback...');
+    
+    try {
+      const updateConfig = this.store.get('updateConfig');
+      if (updateConfig?.backupPath && fs.existsSync(updateConfig.backupPath)) {
+        fs.copyFileSync(updateConfig.backupPath, updateConfig.oldExePath);
+        console.log('Rollback successful');
+        
+        // Add to update history
+        this.addToUpdateHistory({
+          ...updateConfig.updateInfo,
+          status: 'rolled_back',
+          timestamp: Date.now()
+        });
+      }
+    } catch (error) {
+      console.error('Rollback failed:', error);
+    }
+  }
+
+  // Get current update status
+  getUpdateStatus() {
+    const pendingUpdate = this.store.get('pendingUpdate');
+    const updateConfig = this.store.get('updateConfig');
+    const lastUpdateInfo = this.store.get('lastUpdateInfo');
+    
+    return {
+      hasPendingUpdate: !!pendingUpdate,
+      isUpdateInProgress: !!updateConfig,
+      pendingUpdate,
+      lastUpdateCheck: this.store.get('lastUpdateCheck'),
+      lastUpdateInfo,
+      updateHistory: this.getUpdateHistory()
+    };
   }
 }
 
