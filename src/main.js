@@ -37,14 +37,44 @@ if (process.platform === 'win32') {
 // Initialize electron-store
 const store = new Store();
 
+// Single instance lock handling
+const gotTheLock = app.requestSingleInstanceLock();
+
+if (!gotTheLock) {
+  console.log('Another instance is running, quitting...');
+  app.quit();
+} else {
+  app.on('second-instance', (event, commandLine, workingDirectory) => {
+    // Someone tried to run a second instance, focus our window instead
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.focus();
+    }
+  });
+}
+
 // Cleanup function for update files
 function cleanupUpdateFiles() {
   try {
+    console.log('Starting cleanup of update files...');
+    
     // Clean up temp update files
     const tempDir = path.join(os.tmpdir(), 'drivebox-update');
     if (fs.existsSync(tempDir)) {
+      const files = fs.readdirSync(tempDir);
+      console.log(`Found ${files.length} temp update files to clean`);
       fs.rmSync(tempDir, { recursive: true, force: true });
       console.log('Cleaned up temp update files');
+    }
+    
+    // Log pending updates for debugging
+    const pendingUpdate = store.get('pendingUpdate');
+    if (pendingUpdate) {
+      console.log('Found pending update:', pendingUpdate);
+      if (!fs.existsSync(pendingUpdate.filePath)) {
+        console.log('Pending update file not found, clearing from store');
+        store.delete('pendingUpdate');
+      }
     }
     
     // Clean up any backup files older than 24 hours
@@ -69,9 +99,34 @@ function cleanupUpdateFiles() {
           }
         }
       }
-    });
-  } catch (error) {
+    });  } catch (error) {
     console.warn('Cleanup failed:', error.message);
+  }
+}
+
+// Validation function for update files
+async function validateUpdateFile(filePath) {
+  try {
+    if (!fs.existsSync(filePath)) {
+      return { valid: false, error: 'Update file not found' };
+    }
+    
+    const stats = fs.statSync(filePath);
+    
+    // Check file size (should be at least 10MB for DriveBox)
+    if (stats.size < 10 * 1024 * 1024) {
+      return { valid: false, error: 'Update file is too small, likely corrupted' };
+    }
+    
+    // Check if it's actually an executable
+    const buffer = fs.readFileSync(filePath, { start: 0, end: 2 });
+    if (buffer[0] !== 0x4D || buffer[1] !== 0x5A) { // MZ header
+      return { valid: false, error: 'Update file is not a valid executable' };
+    }
+    
+    return { valid: true };
+  } catch (error) {
+    return { valid: false, error: `Validation failed: ${error.message}` };
   }
 }
 
@@ -2283,95 +2338,130 @@ ipcMain.handle('check-app-updates', async () => {
 
 // Download and install update
 ipcMain.handle('download-app-update', async (event, updateInfo) => {
-  try {
-    if (!updateInfo.downloadUrl) {
-      throw new Error('No download URL provided');
-    }
-    console.log('Starting app update download...');
-    
-    // Create temp directory for update
-    const tempDir = path.join(os.tmpdir(), 'drivebox-update');
-    if (!fs.existsSync(tempDir)) {
-      fs.mkdirSync(tempDir, { recursive: true });
-    }
-    const fileName = `drivebox-${updateInfo.latestVersion}.exe`;
-    const filePath = path.join(tempDir, fileName);
-    
-    // Start download with progress tracking
-    const response = await fetch(updateInfo.downloadUrl);
-    if (!response.ok) {
-      throw new Error(`Download failed: ${response.statusText} (${response.status})`);
-    }
-    
-    const contentLength = parseInt(response.headers.get('content-length'), 10);
-    let downloadedBytes = 0;
-    let downloadStartTime = Date.now();
-    
-    const fileStream = fs.createWriteStream(filePath);
-    
-    return new Promise((resolve, reject) => {
-      response.body.on('data', (chunk) => {
-        downloadedBytes += chunk.length;
+  const maxRetries = 3;
+  let attempt = 0;
+  
+  while (attempt < maxRetries) {
+    try {
+      attempt++;
+      console.log(`Update download attempt ${attempt}/${maxRetries}`);
+      
+      if (!updateInfo.downloadUrl) {
+        throw new Error('No download URL provided');
+      }
+      console.log('Starting app update download...');
+      
+      // Create temp directory for update
+      const tempDir = path.join(os.tmpdir(), 'drivebox-update');
+      if (!fs.existsSync(tempDir)) {
+        fs.mkdirSync(tempDir, { recursive: true });
+      }
+      const fileName = `drivebox-${updateInfo.latestVersion}.exe`;
+      const filePath = path.join(tempDir, fileName);
+      
+      // Start download with progress tracking
+      const response = await fetch(updateInfo.downloadUrl);
+      if (!response.ok) {
+        throw new Error(`Download failed: ${response.statusText} (${response.status})`);
+      }
+      
+      const contentLength = parseInt(response.headers.get('content-length'), 10);
+      let downloadedBytes = 0;
+      let downloadStartTime = Date.now();
+      
+      const fileStream = fs.createWriteStream(filePath);
+      
+      const downloadResult = await new Promise((resolve, reject) => {
+        response.body.on('data', (chunk) => {
+          downloadedBytes += chunk.length;
+          
+          // Send progress update to renderer
+          if (contentLength && mainWindow && mainWindow.webContents) {
+            const progress = Math.round((downloadedBytes / contentLength) * 100);
+            
+            // Calculate speed
+            const elapsedTime = (Date.now() - downloadStartTime) / 1000;
+            const speed = elapsedTime > 0 ? Math.round(downloadedBytes / elapsedTime) : 0;
+            
+            // Calculate ETA
+            const remainingBytes = contentLength - downloadedBytes;
+            const eta = speed > 0 ? Math.round(remainingBytes / speed) : 0;
+            
+            mainWindow.webContents.send('update-download-progress', {
+              progress,
+              downloadedBytes,
+              totalBytes: contentLength,
+              speed: speed < 1024 ? `${speed} B/s` : 
+                     speed < 1024 * 1024 ? `${Math.round(speed / 1024)} KB/s` : 
+                     `${Math.round(speed / (1024 * 1024))} MB/s`,
+              eta,
+              version: updateInfo.latestVersion
+            });
+          }
+        });
         
-        // Send progress update to renderer
-        if (contentLength && mainWindow && mainWindow.webContents) {
-          const progress = Math.round((downloadedBytes / contentLength) * 100);
-          
-          // Calculate speed
-          const elapsedTime = (Date.now() - downloadStartTime) / 1000;
-          const speed = elapsedTime > 0 ? Math.round(downloadedBytes / elapsedTime) : 0;
-          
-          // Calculate ETA
-          const remainingBytes = contentLength - downloadedBytes;
-          const eta = speed > 0 ? Math.round(remainingBytes / speed) : 0;
-          
-          mainWindow.webContents.send('update-download-progress', {
-            progress,
-            downloadedBytes,
-            totalBytes: contentLength,
-            speed: speed < 1024 ? `${speed} B/s` : 
-                   speed < 1024 * 1024 ? `${Math.round(speed / 1024)} KB/s` : 
-                   `${Math.round(speed / (1024 * 1024))} MB/s`,
-            eta,
-            version: updateInfo.latestVersion
-          });
-        }
+        response.body.pipe(fileStream);
+        
+        fileStream.on('finish', () => {
+          console.log('Update downloaded successfully to:', filePath);
+          resolve(filePath);
+        });
+        
+        fileStream.on('error', (error) => {
+          console.error('Update download error:', error);
+          reject(error);
+        });
+        
+        response.body.on('error', (error) => {
+          console.error('Update download stream error:', error);
+          reject(error);
+        });
       });
       
-      response.body.pipe(fileStream);
-      
-      fileStream.on('finish', () => {
-        console.log('Update downloaded successfully to:', filePath);
-        
-        // Final progress update
-        if (mainWindow && mainWindow.webContents) {
-          mainWindow.webContents.send('update-download-progress', {
-            progress: 100,
-            downloadedBytes,
-            totalBytes: contentLength || downloadedBytes,
-            speed: '0 B/s',
-            version: updateInfo.latestVersion,
-            completed: true
-          });
+      // Validate downloaded file
+      const validation = await validateUpdateFile(filePath);
+      if (!validation.valid) {
+        if (attempt < maxRetries) {
+          console.log(`Download validation failed: ${validation.error}, retrying...`);
+          // Clean up failed download
+          if (fs.existsSync(filePath)) {
+            fs.unlinkSync(filePath);
+          }
+          continue;
+        } else {
+          throw new Error(`Download validation failed: ${validation.error}`);
         }
-        
-        // Store the update file path for later installation
-        store.set('pendingUpdate', {
-          filePath: filePath,
+      }
+      
+      // Final progress update
+      if (mainWindow && mainWindow.webContents) {
+        mainWindow.webContents.send('update-download-progress', {
+          progress: 100,
+          downloadedBytes,
+          totalBytes: contentLength || downloadedBytes,
+          speed: '0 B/s',
           version: updateInfo.latestVersion,
-          downloadedAt: new Date().toISOString()
+          completed: true
         });
-        
-        resolve({ 
-          success: true, 
-          filePath: filePath,
-          message: 'Update downloaded successfully. Restart to install.',
-          version: updateInfo.latestVersion
-        });
+      }
+      
+      // Store the update file path for later installation
+      store.set('pendingUpdate', {
+        filePath: filePath,
+        version: updateInfo.latestVersion,
+        downloadedAt: new Date().toISOString()
       });
       
-      fileStream.on('error', (error) => {
-        console.error('Update download error:', error);
+      return { 
+        success: true, 
+        filePath: filePath,
+        message: 'Update downloaded and validated successfully',
+        version: updateInfo.latestVersion
+      };
+      
+    } catch (error) {
+      if (attempt >= maxRetries) {
+        console.error('Update download failed after all retries:', error);
         
         // Send error to renderer
         if (mainWindow && mainWindow.webContents) {
@@ -2381,17 +2471,11 @@ ipcMain.handle('download-app-update', async (event, updateInfo) => {
           });
         }
         
-        reject(error);
-      });
-      
-      response.body.on('error', (error) => {
-        console.error('Update download stream error:', error);
-        reject(error);
-      });
-    });
-  } catch (error) {
-    console.error('Update download failed:', error);
-    return { success: false, error: error.message };
+        return { success: false, error: error.message };
+      }
+      console.log(`Download attempt ${attempt} failed: ${error.message}, retrying...`);
+      await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds before retry
+    }
   }
 });
 
@@ -2405,11 +2489,26 @@ ipcMain.handle('restart-app', async () => {
   try {
     console.log('Restarting application for update...');
     
-    // Check if there's a pending update
+    // Force close all windows first
+    BrowserWindow.getAllWindows().forEach(window => {
+      if (!window.isDestroyed()) {
+        window.close();
+      }
+    });
+    
+    // Wait a moment for windows to close
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
     const pendingUpdate = store.get('pendingUpdate');
     
     if (pendingUpdate && fs.existsSync(pendingUpdate.filePath)) {
       console.log('Installing update from:', pendingUpdate.filePath);
+      
+      // Validate update file before proceeding
+      const validation = await validateUpdateFile(pendingUpdate.filePath);
+      if (!validation.valid) {
+        throw new Error(`Update file validation failed: ${validation.error}`);
+      }
       
       // Get current executable path
       const currentExePath = process.execPath;
@@ -2421,27 +2520,59 @@ ipcMain.handle('restart-app', async () => {
         fs.copyFileSync(currentExePath, backupPath);
         console.log('Created backup at:', backupPath);
         
-        // Create a batch script to handle the update
+        // Create improved batch script to handle the update
         const batchScript = `
 @echo off
+chcp 65001 > nul
 echo Installing DriveBox update...
-timeout /t 2 /nobreak >nul
-taskkill /f /im "drivebox.exe" 2>nul
-taskkill /f /im "DriveBox.exe" 2>nul
-timeout /t 1 /nobreak >nul
+
+:: Wait longer for app to close
+timeout /t 5 /nobreak >nul
+
+:: More comprehensive process termination
+taskkill /f /im "drivebox.exe" /t 2>nul
+taskkill /f /im "DriveBox.exe" /t 2>nul
+taskkill /f /im "DriveBox App.exe" /t 2>nul
+wmic process where "name like '%%drivebox%%'" delete 2>nul
+
+:: Wait for processes to fully terminate
+timeout /t 3 /nobreak >nul
+
+:: Verify current app is not running
+:WAIT_LOOP
+tasklist /fi "imagename eq drivebox.exe" 2>nul | find /i "drivebox.exe" >nul
+if not errorlevel 1 (
+    echo Waiting for app to close...
+    timeout /t 2 /nobreak >nul
+    goto WAIT_LOOP
+)
+
+:: Perform update with better error handling
+echo Copying update file...
 copy /Y "${pendingUpdate.filePath}" "${currentExePath}"
 if %errorlevel% equ 0 (
     echo Update installed successfully
+    echo Starting updated application...
     start "" "${currentExePath}"
-    del "${pendingUpdate.filePath}"
-    del "${backupPath}"
+    timeout /t 2 /nobreak >nul
+    del "${pendingUpdate.filePath}" 2>nul
+    del "${backupPath}" 2>nul
 ) else (
-    echo Update failed, restoring backup
+    echo Update failed with error %errorlevel%
+    echo Restoring backup...
     copy /Y "${backupPath}" "${currentExePath}"
-    del "${backupPath}"
-    start "" "${currentExePath}"
+    if %errorlevel% equ 0 (
+        echo Backup restored, starting original version...
+        start "" "${currentExePath}"
+    ) else (
+        echo Critical error: Cannot restore backup!
+        pause
+    )
+    del "${backupPath}" 2>nul
 )
-del "%~f0"
+
+:: Clean up
+del "%~f0" 2>nul
 `;
         
         const batchPath = path.join(currentDir, 'update-install.bat');
@@ -2449,6 +2580,9 @@ del "%~f0"
         
         // Clear pending update from store
         store.delete('pendingUpdate');
+        
+        // Release single instance lock before relaunch
+        app.releaseSingleInstanceLock();
         
         // Execute the batch script and exit
         const { spawn } = require('child_process');
@@ -2464,12 +2598,16 @@ del "%~f0"
         console.error('Update installation failed:', updateError);
         
         // If update fails, just restart normally
+        app.releaseSingleInstanceLock();
         app.relaunch();
         app.exit(0);
       }
     } else {
       // No update pending, just restart normally
       console.log('No pending update, restarting normally...');
+      
+      // Release single instance lock before relaunch
+      app.releaseSingleInstanceLock();
       app.relaunch();
       app.exit(0);
     }
@@ -2477,6 +2615,12 @@ del "%~f0"
     return { success: true };
   } catch (error) {
     console.error('Failed to restart app:', error);
+    
+    // Fallback: force restart without update
+    app.releaseSingleInstanceLock();
+    app.relaunch();
+    app.exit(0);
+    
     return { success: false, error: error.message };
   }
 });

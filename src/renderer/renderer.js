@@ -1431,14 +1431,17 @@ class DriveBoxApp {    constructor() {
         this.updateStatusBar(`🔔 Update available: v${updateInfo.latestVersion} - Click to download`);
     }    // Show detailed update toast
     showDetailedUpdateToast(notification) {
-        // Update toast disabled - showing only status bar notification
-        console.log('Update notification:', notification);
+        // Update toast disabled - showing only status bar notification        console.log('Update notification:', notification);
         return;
-    }    // Download Update
+    }
+
+    // Download Update
     async downloadUpdate(updateInfo) {
         try {
             console.log('Starting app update download:', updateInfo);
-            this.showToast('🔄 Đang bắt đầu tải xuống cập nhật...', 'info');
+            
+            // Show more detailed progress
+            this.showToast('🔄 Chuẩn bị tải xuống cập nhật...', 'info');
             this.updateStatusBar(`🔄 Đang tải xuống cập nhật v${updateInfo.latestVersion}...`);
             
             // Show progress bar for update download
@@ -1484,7 +1487,8 @@ class DriveBoxApp {    constructor() {
                 if (progressText) progressText.textContent = '100%';
                 if (fileStatus) fileStatus.textContent = 'Tải xuống cập nhật hoàn tất';
                 
-                this.showToast(`✅ Cập nhật v${updateInfo.latestVersion} đã tải xong! Khởi động lại để cài đặt`, 'success');
+                // Better success message with next steps
+                this.showToast(`✅ Cập nhật v${updateInfo.latestVersion} đã sẵn sàng! Nhấn OK để khởi động lại và cài đặt.`, 'success');
                 this.updateStatusBar(`✅ Cập nhật v${updateInfo.latestVersion} sẵn sàng - Khởi động lại để cài đặt`);
                 
                 // Hide progress bar after showing completion
@@ -1494,10 +1498,19 @@ class DriveBoxApp {    constructor() {
                     }
                 }, 3000);
                 
-                // Show restart prompt
+                // More explicit restart confirmation
                 setTimeout(() => {
-                    if (confirm('Cập nhật đã được tải xuống. Bạn có muốn khởi động lại ứng dụng ngay để cài đặt cập nhật?')) {
-                        window.electronAPI.restartApp && window.electronAPI.restartApp();
+                    const shouldRestart = confirm(
+                        `Cập nhật DriveBox v${updateInfo.latestVersion} đã được tải xuống thành công!\n\n` +
+                        `Bạn có muốn khởi động lại ứng dụng ngay để cài đặt cập nhật không?\n\n` +
+                        `Lưu ý: Ứng dụng sẽ tự động mở lại sau khi cập nhật hoàn tất.`
+                    );
+                    
+                    if (shouldRestart) {
+                        this.updateStatusBar('🔄 Đang khởi động lại để cài đặt cập nhật...');
+                        setTimeout(() => {
+                            window.electronAPI.restartApp && window.electronAPI.restartApp();
+                        }, 1000);
                     }
                 }, 2000);
                 
@@ -1507,7 +1520,9 @@ class DriveBoxApp {    constructor() {
             
         } catch (error) {
             console.error('Update download failed:', error);
-            this.showToast(`❌ Lỗi tải cập nhật: ${error.message}`, 'error');
+            
+            // Better error messages
+            this.showToast(`❌ Lỗi tải cập nhật: ${error.message}\nVui lòng thử lại sau.`, 'error');
             this.updateStatusBar(`❌ Tải cập nhật thất bại: ${error.message}`);
             
             // Hide progress bar on error
