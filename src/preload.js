@@ -21,11 +21,20 @@ contextBridge.exposeInMainWorld('electronAPI', {
   removeDownloadProgressListener: () => {
     ipcRenderer.removeAllListeners('download-progress');
   },
-    // Auto-update APIs
+  // Auto-update APIs
   checkAppUpdates: () => ipcRenderer.invoke('check-app-updates'),
+  checkAppUpdatesManual: () => ipcRenderer.invoke('check-app-updates-manual'),
   downloadAppUpdate: (updateInfo) => ipcRenderer.invoke('download-app-update', updateInfo),
   getAppVersion: () => ipcRenderer.invoke('get-app-version'),
   restartApp: () => ipcRenderer.invoke('restart-app'),
+  
+  // Update settings
+  getUpdateSettings: () => ipcRenderer.invoke('get-update-settings'),
+  setUpdateSettings: (settings) => ipcRenderer.invoke('set-update-settings', settings),
+  
+  // Update history and status
+  getUpdateHistory: () => ipcRenderer.invoke('get-update-history'),
+  getPendingUpdate: () => ipcRenderer.invoke('get-pending-update'),
   
   // Update progress listeners
   onUpdateDownloadProgress: (callback) => {
