@@ -6,7 +6,7 @@
 
 **Ứng dụng Electron portable cho việc cài đặt và cập nhật các ứng dụng một cách dễ dàng**
 
-[![Version](https://img.shields.io/badge/version-1.2.4-blue.svg)](package.json)
+[![Version](https://img.shields.io/badge/version-1.2.5-blue.svg)](package.json)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Electron](https://img.shields.io/badge/electron-latest-brightgreen.svg)](https://electronjs.org/)
 [![Node.js](https://img.shields.io/badge/node.js-16+-brightgreen.svg)](https://nodejs.org/)

@@ -323,13 +323,26 @@ class DriveBoxApp {    constructor() {
                 };
                 
                 console.log('Updated installedApps:', this.installedApps[app.id]); // Debug
+                console.log('Full installedApps after update:', this.installedApps); // Debug
                 
                 this.updateStatusBar(`✅ ${app.name} tải xuống thành công! Vị trí: ${result.path}`);
                 this.showToast(`Đã tải xuống thành công ${app.name}`, 'success');
                 
-                // Update card immediately to show installed status
-                console.log('Updating card immediately after success'); // Debug
-                this.updateAppCard(card, app);
+                // Force immediate UI update multiple times to ensure it takes effect
+                setTimeout(() => {
+                    console.log('Force updating card UI after success - attempt 1'); // Debug
+                    this.updateAppCard(card, app);
+                }, 100);
+                
+                setTimeout(() => {
+                    console.log('Force updating card UI after success - attempt 2'); // Debug
+                    this.updateAppCard(card, app);
+                }, 500);
+                
+                setTimeout(() => {
+                    console.log('Force updating card UI after success - attempt 3'); // Debug
+                    this.updateAppCard(card, app);
+                }, 1000);
                 
                 // Auto-refresh installed apps list after download
                 await this.autoRefreshApps();
@@ -391,6 +404,11 @@ class DriveBoxApp {    constructor() {
                 window.electronAPI.getApps(),
                 window.electronAPI.getInstalledApps()
             ]);
+            
+            console.log('=== LOAD APPS DEBUG ===');
+            console.log('Available apps:', apps);
+            console.log('Installed apps from backend:', installedApps);
+            console.log('======================');
             
             this.apps = apps;
             this.installedApps = installedApps;
@@ -489,7 +507,13 @@ class DriveBoxApp {    constructor() {
             appsGrid.appendChild(card);
         });
     }    updateAppCard(card, app) {
-        console.log('Updating card for:', app.name, 'Installed:', !!this.installedApps[app.id], 'Currently downloading:', this.isDownloading && this.currentDownload && this.currentDownload.app.id === app.id); // Debug
+        console.log('=== UPDATING CARD DEBUG ===');
+        console.log('App:', app.name, 'ID:', app.id);
+        console.log('installedApps[app.id]:', this.installedApps[app.id]);
+        console.log('Full installedApps:', this.installedApps);
+        console.log('Is installed check:', !!this.installedApps[app.id]);
+        console.log('Currently downloading:', this.isDownloading && this.currentDownload && this.currentDownload.app.id === app.id);
+        console.log('========================');
         
         const statusBadge = card.querySelector('.status-badge');
         const installBtn = card.querySelector('[data-action="install"]');
@@ -512,13 +536,22 @@ class DriveBoxApp {    constructor() {
             currentDownloadId: this.currentDownload?.app?.id
         }); // Debug
         
-        // Reset all buttons
-        [installBtn, openBtn, openFolderBtn, updateBtn, uninstallBtn].forEach(btn => {
+        // Reset all buttons - both class and inline style
+        // Note: Install button might be removed for installed apps, so handle separately
+        [openBtn, openFolderBtn, updateBtn, uninstallBtn].forEach(btn => {
             if (btn) {
                 btn.classList.add('hidden');
+                btn.style.display = 'none'; // Also set inline style
                 btn.disabled = false;
             }
         });
+        
+        // Handle install button separately since it might be removed
+        if (installBtn) {
+            installBtn.classList.add('hidden');
+            installBtn.style.display = 'none';
+            installBtn.disabled = false;
+        }
         
         if (isCurrentlyDownloading) {
             // Currently downloading
@@ -531,56 +564,78 @@ class DriveBoxApp {    constructor() {
             [installBtn, openBtn, openFolderBtn, updateBtn, uninstallBtn].forEach(btn => {
                 if (btn) btn.disabled = true;
             });        } else if (!isInstalled) {
-            // Not installed
+            // Not installed - show download button
             console.log('Setting not-installed status for:', app.name); // Debug
             if (statusBadge) {
                 statusBadge.textContent = 'Chưa cài đặt';
                 statusBadge.className = 'status-badge not-installed';
             }
-            // Ẩn nút download vì app đã được tải
             if (installBtn) {
-                installBtn.classList.add('hidden');
+                console.log('Showing install button for:', app.name); // Debug
+                installBtn.classList.remove('hidden');
+                installBtn.style.display = ''; // Remove inline style to use CSS default
+                installBtn.textContent = 'Tải xuống';
             }
         } else if (hasUpdate) {
-            // Update available
+            // Update available - remove download button completely, show other buttons
             console.log('Setting update-available status for:', app.name); // Debug
             if (statusBadge) {
                 statusBadge.textContent = 'Có bản cập nhật';
                 statusBadge.className = 'status-badge update-available';
             }
+            // Xóa hoàn toàn nút download vì app đã được cài đặt
+            if (installBtn) {
+                console.log('Removing install button (update case) for:', app.name); // Debug
+                installBtn.remove(); // Xóa hoàn toàn khỏi DOM
+            }
             if (openBtn) {
                 openBtn.classList.remove('hidden');
+                openBtn.style.display = ''; // Remove inline style
                 openBtn.textContent = 'Mở';
             }
             if (openFolderBtn) {
                 openFolderBtn.classList.remove('hidden');
+                openFolderBtn.style.display = ''; // Remove inline style
                 openFolderBtn.textContent = 'Mở thư mục';
             }
             if (updateBtn) {
                 updateBtn.classList.remove('hidden');
+                updateBtn.style.display = ''; // Remove inline style
                 updateBtn.textContent = 'Cập nhật';
             }
             if (uninstallBtn) {
                 uninstallBtn.classList.remove('hidden');
+                uninstallBtn.style.display = ''; // Remove inline style
                 uninstallBtn.textContent = 'Gỡ cài đặt';
             }
         } else {
-            // Up to date / Installed
+            // Up to date / Installed - remove download button completely
             console.log('Setting installed status for:', app.name); // Debug
             if (statusBadge) {
                 statusBadge.textContent = 'Đã cài đặt';
                 statusBadge.className = 'status-badge installed';
             }
+            // Xóa hoàn toàn nút download vì app đã được cài đặt
+            if (installBtn) {
+                console.log('Removing install button for:', app.name, 'Button found:', !!installBtn); // Debug
+                installBtn.remove(); // Xóa hoàn toàn khỏi DOM
+                console.log('Install button removed from DOM'); // Debug
+            } else {
+                console.log('Install button not found for:', app.name); // Debug
+            }
             if (openBtn) {
                 openBtn.classList.remove('hidden');
+                openBtn.style.display = ''; // Remove inline style
                 openBtn.textContent = 'Mở';
             }
             if (openFolderBtn) {
                 openFolderBtn.classList.remove('hidden');
+                openFolderBtn.style.display = ''; // Remove inline style
                 openFolderBtn.textContent = 'Mở thư mục';
             }
             if (uninstallBtn) {
                 uninstallBtn.classList.remove('hidden');
+                uninstallBtn.style.display = ''; // Remove inline style
                 uninstallBtn.textContent = 'Gỡ cài đặt';
             }
         }
@@ -791,6 +846,23 @@ class DriveBoxApp {    constructor() {
             }
         });
     }    async installApp(app, card) {
+        // Kiểm tra xem app đã được cài đặt chưa trước khi download
+        console.log('=== INSTALL APP CHECK ===');
+        console.log('App:', app.name, 'ID:', app.id);
+        console.log('Current installedApps:', this.installedApps);
+        console.log('Is already installed:', !!this.installedApps[app.id]);
+        
+        if (this.installedApps[app.id]) {
+            console.log('App already installed, showing message');
+            this.showToast(`${app.name} đã được cài đặt rồi!`, 'warning');
+            this.updateStatusBar(`${app.name} đã được cài đặt`);
+            
+            // Force update card to show installed status
+            this.updateAppCard(card, app);
+            return;
+        }
+        
+        console.log('App not installed, proceeding with download');
         this.addToDownloadQueue(app, card);
     }
 

@@ -183,7 +183,7 @@ class UpdateManager {  constructor() {
   // Enhanced update checking with multiple sources
   async checkForUpdates(silent = false) {
     try {
-      const currentVersion = app?.getVersion ? app.getVersion() : '1.2.4'; // Fallback for testing
+      const currentVersion = app?.getVersion ? app.getVersion() : '1.2.5'; // Fallback for testing
       const now = Date.now();
       
       // Rate limiting - don't check too frequently
@@ -241,7 +241,7 @@ class UpdateManager {  constructor() {
     } catch (error) {
       console.error('Update check failed:', error);      return {
         hasUpdate: false,
-        currentVersion: app?.getVersion ? app.getVersion() : '1.2.4',
+        currentVersion: app?.getVersion ? app.getVersion() : '1.2.5',
         error: error.message
       };
     }
