@@ -530,17 +530,16 @@ class DriveBoxApp {    constructor() {
             // Disable all buttons during download
             [installBtn, openBtn, openFolderBtn, updateBtn, uninstallBtn].forEach(btn => {
                 if (btn) btn.disabled = true;
-            });
-        } else if (!isInstalled) {
+            });        } else if (!isInstalled) {
             // Not installed
             console.log('Setting not-installed status for:', app.name); // Debug
             if (statusBadge) {
                 statusBadge.textContent = 'Chưa cài đặt';
                 statusBadge.className = 'status-badge not-installed';
             }
+            // Ẩn nút download vì app đã được tải
             if (installBtn) {
-                installBtn.classList.remove('hidden');
-                installBtn.textContent = 'Tải xuống';
+                installBtn.classList.add('hidden');
             }
         } else if (hasUpdate) {
             // Update available
