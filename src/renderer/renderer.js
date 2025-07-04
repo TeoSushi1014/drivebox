@@ -845,6 +845,281 @@ class DriveBoxApp {    constructor() {
                 this.showToast('Debug info logged to console (F12)', 'info');
             }
         });
+
+        // Auto Fix Modal Event Listeners
+        try {
+            this.setupAutoFixModal();
+        } catch (error) {
+            console.error('Error setting up auto fix modal:', error);
+        }
+    }
+
+    setupAutoFixModal() {
+        console.log('Setting up auto fix modal...');
+        
+        // Use setTimeout to ensure DOM is fully loaded
+        setTimeout(() => {
+            const autoFixBtn = document.getElementById('autoFixBtn');
+            const autoFixModal = document.getElementById('autoFixModal');
+            const autoFixClose = document.getElementById('autoFixClose');
+            const startFixBtn = document.getElementById('startFixBtn');
+            const cancelFixBtn = document.getElementById('cancelFixBtn');
+
+            console.log('Auto fix elements found:', {
+                autoFixBtn: !!autoFixBtn,
+                autoFixModal: !!autoFixModal,
+                autoFixClose: !!autoFixClose,
+                startFixBtn: !!startFixBtn,
+                cancelFixBtn: !!cancelFixBtn
+            });
+
+            // Open modal
+            if (autoFixBtn) {
+                console.log('Adding click listener to auto fix button');
+                autoFixBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    console.log('Auto fix button clicked!');
+                    this.openAutoFixModal();
+                });
+            } else {
+                console.error('Auto fix button not found!');
+            }
+
+            // Close modal
+            if (autoFixClose) {
+                autoFixClose.addEventListener('click', () => {
+                    this.closeAutoFixModal();
+                });
+            }
+
+            // Close modal on outside click
+            if (autoFixModal) {
+                autoFixModal.addEventListener('click', (e) => {
+                    if (e.target === autoFixModal) {
+                        this.closeAutoFixModal();
+                    }
+                });
+            }
+
+            // Start fix
+            if (startFixBtn) {
+                startFixBtn.addEventListener('click', () => {
+                    this.startAutoFix();
+                });
+            }
+
+            // Cancel fix
+            if (cancelFixBtn) {
+                cancelFixBtn.addEventListener('click', () => {
+                    this.closeAutoFixModal();
+                });
+            }
+        }, 1000);
+    }
+
+    openAutoFixModal() {
+        console.log('Opening auto fix modal...');
+        const modal = document.getElementById('autoFixModal');
+        if (modal) {
+            console.log('Modal found, removing hidden class');
+            modal.classList.remove('hidden');
+            this.resetAutoFixModal();
+        } else {
+            console.error('Auto fix modal not found!');
+        }
+    }
+
+    closeAutoFixModal() {
+        const modal = document.getElementById('autoFixModal');
+        if (modal) {
+            modal.classList.add('hidden');
+        }
+    }
+
+    resetAutoFixModal() {
+        const statusMessage = document.getElementById('fixStatusMessage');
+        const progressFill = document.getElementById('fixProgressFill');
+        const progressText = document.getElementById('fixProgressText');
+        const startBtn = document.getElementById('startFixBtn');
+        const cancelBtn = document.getElementById('cancelFixBtn');
+        const resultsDiv = document.getElementById('fixResults');
+
+        if (statusMessage) statusMessage.textContent = 'Sẵn sàng để bắt đầu';
+        if (progressFill) progressFill.style.width = '0%';
+        if (progressText) progressText.textContent = '0%';
+        if (startBtn) {
+            startBtn.disabled = false;
+            startBtn.textContent = '🚀 Bắt đầu Fix';
+        }
+        if (cancelBtn) {
+            cancelBtn.disabled = false;
+            cancelBtn.textContent = '❌ Hủy';
+        }
+        if (resultsDiv) resultsDiv.style.display = 'none';
+    }
+
+    async startAutoFix() {
+        const statusMessage = document.getElementById('fixStatusMessage');
+        const progressFill = document.getElementById('fixProgressFill');
+        const progressText = document.getElementById('fixProgressText');
+        const startBtn = document.getElementById('startFixBtn');
+        const cancelBtn = document.getElementById('cancelFixBtn');
+        const resultsDiv = document.getElementById('fixResults');
+        const resultsContent = document.getElementById('fixResultsContent');
+
+        try {
+            // Disable buttons
+            if (startBtn) {
+                startBtn.disabled = true;
+                startBtn.textContent = '⏳ Đang xử lý...';
+            }
+            if (cancelBtn) cancelBtn.disabled = true;
+
+            // Start fix process
+            if (statusMessage) statusMessage.textContent = 'Đang kiểm tra dependencies...';
+
+            // Listen for progress updates
+            const progressListener = (data) => {
+                console.log('Fix progress received:', data);
+                
+                if (statusMessage && data.message) statusMessage.textContent = data.message;
+                
+                if (data.progress >= 0) {
+                    if (progressFill) progressFill.style.width = data.progress + '%';
+                    if (progressText) progressText.textContent = data.progress + '%';
+                }
+            };
+
+            // Set up progress listener
+            if (window.electronAPI.onAutoFixProgress) {
+                window.electronAPI.onAutoFixProgress(progressListener);
+            }
+
+            const results = await window.electronAPI.quickFix();
+
+            // Show results
+            if (resultsDiv && resultsContent) {
+                resultsContent.innerHTML = this.formatFixResults(results);
+                resultsDiv.style.display = 'block';
+            }
+
+            if (results.success) {
+                this.showToast('Auto-fix hoàn thành thành công!', 'success');
+                if (statusMessage) statusMessage.textContent = 'Hoàn thành thành công!';
+                if (progressFill) progressFill.style.width = '100%';
+                if (progressText) progressText.textContent = '100%';
+            } else {
+                this.showToast('Auto-fix gặp lỗi: ' + results.message, 'error');
+                if (statusMessage) statusMessage.textContent = 'Gặp lỗi: ' + results.message;
+            }
+
+        } catch (error) {
+            console.error('Auto fix error:', error);
+            this.showToast('Lỗi auto-fix: ' + error.message, 'error');
+            if (statusMessage) statusMessage.textContent = 'Lỗi: ' + error.message;
+        } finally {
+            // Remove progress listener
+            if (window.electronAPI.removeAutoFixProgressListener) {
+                window.electronAPI.removeAutoFixProgressListener();
+            }
+
+            // Re-enable buttons
+            if (startBtn) {
+                startBtn.disabled = false;
+                startBtn.textContent = '🔄 Fix lại';
+            }
+            if (cancelBtn) {
+                cancelBtn.disabled = false;
+                cancelBtn.textContent = '❌ Đóng';
+            }
+        }
+    }
+
+    formatFixResults(results) {
+        let html = '<div class="fix-results-list">';
+        
+        if (results.details) {
+            // Case 1: Dependencies already installed (details from checkDependenciesStatus)
+            if (typeof results.details.vcredist === 'boolean') {
+                // VCRedist status
+                const vcredistInstalled = results.details.vcredist;
+                const icon = vcredistInstalled ? '✅' : '❌';
+                const className = vcredistInstalled ? 'success' : 'error';
+                const text = vcredistInstalled 
+                    ? 'Visual C++ Redistributable đã được cài đặt sẵn'
+                    : 'Visual C++ Redistributable chưa được cài đặt';
+                
+                html += `<div class="fix-result-item ${className}">
+                    <span class="fix-result-icon">${icon}</span>
+                    <span class="fix-result-text">${text}</span>
+                </div>`;
+
+                // K-Lite status
+                const kliteInstalled = results.details.klite;
+                const kliteIcon = kliteInstalled ? '✅' : '❌';
+                const kliteClassName = kliteInstalled ? 'success' : 'error';
+                const kliteText = kliteInstalled 
+                    ? 'K-Lite Codec Pack Mega đã được cài đặt sẵn'
+                    : 'K-Lite Codec Pack Mega chưa được cài đặt';
+                
+                html += `<div class="fix-result-item ${kliteClassName}">
+                    <span class="fix-result-icon">${kliteIcon}</span>
+                    <span class="fix-result-text">${kliteText}</span>
+                </div>`;
+            }
+            // Case 2: Dependencies installation results (details from autoFixDependencies)
+            else {
+                if (results.details.vcredist) {
+                    const success = results.details.vcredist.success;
+                    const alreadyInstalled = results.details.vcredist.alreadyInstalled;
+                    const icon = success ? '✅' : '❌';
+                    const className = success ? 'success' : 'error';
+                    
+                    let text;
+                    if (success && alreadyInstalled) {
+                        text = 'Visual C++ Redistributable đã được cài đặt sẵn';
+                    } else if (success) {
+                        text = `Visual C++ Redistributable đã được cài đặt thành công (${results.details.vcredist.version || 'latest'})`;
+                    } else {
+                        text = `Lỗi cài đặt Visual C++ Redistributable: ${results.details.vcredist.error || 'Unknown error'}`;
+                    }
+                    
+                    html += `<div class="fix-result-item ${className}">
+                        <span class="fix-result-icon">${icon}</span>
+                        <span class="fix-result-text">${text}</span>
+                    </div>`;
+                }
+
+                if (results.details.klite) {
+                    const success = results.details.klite.success;
+                    const alreadyInstalled = results.details.klite.alreadyInstalled;
+                    const icon = success ? '✅' : '❌';
+                    const className = success ? 'success' : 'error';
+                    
+                    let text;
+                    if (success && alreadyInstalled) {
+                        text = 'K-Lite Codec Pack Mega đã được cài đặt sẵn';
+                    } else if (success) {
+                        text = `K-Lite Codec Pack Mega đã được cài đặt thành công (${results.details.klite.version || 'latest'})`;
+                    } else {
+                        text = `Lỗi cài đặt K-Lite Codec Pack: ${results.details.klite.error || 'Unknown error'}`;
+                    }
+                    
+                    html += `<div class="fix-result-item ${className}">
+                        <span class="fix-result-icon">${icon}</span>
+                        <span class="fix-result-text">${text}</span>
+                    </div>`;
+                }
+            }
+        } else {
+            html += `<div class="fix-result-item">
+                <span class="fix-result-icon">ℹ️</span>
+                <span class="fix-result-text">${results.message || 'Không có thông tin chi tiết'}</span>
+            </div>`;
+        }
+        
+        html += '</div>';
+        return html;
     }    async installApp(app, card) {
         // Kiểm tra xem app đã được cài đặt chưa trước khi download
         console.log('=== INSTALL APP CHECK ===');

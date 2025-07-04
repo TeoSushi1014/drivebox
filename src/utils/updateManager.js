@@ -30,6 +30,25 @@ class UpdateManager {  constructor() {
       'https://github.com/TeoSushi1014/drivebox/releases/download',
       // Add more mirrors here if needed
     ];
+
+    // Auto-fix dependencies configuration
+    this.autoFixSources = {
+      vcredist: {
+        name: 'Visual C++ Redistributable',
+        url: 'https://api.github.com/repos/abbodi1406/vcredist/releases/latest',
+        type: 'api',
+        filePattern: /VisualCppRedist_AIO_x86_x64\.exe$/i,
+        installArgs: ['/ai']
+      },
+      klite: {
+        name: 'K-Lite Codec Pack Mega',
+        url: 'https://www.codecguide.com/download_k-lite_codec_pack_mega.htm',
+        type: 'html',
+        directUrl: 'https://files2.codecguide.com/K-Lite_Codec_Pack_1805_Mega.exe',
+        filePattern: /K-Lite_Codec_Pack_.*_Mega\.exe$/i,
+        installArgs: ['/VERYSILENT', '/NORESTART']
+      }
+    };
   }
   // Initialize update manager
   async initialize() {
@@ -773,6 +792,495 @@ class UpdateManager {  constructor() {
       lastUpdateInfo,
       updateHistory: this.getUpdateHistory()
     };
+  }
+
+  // Auto-fix system dependencies
+  async autoFixDependencies(progressCallback = null) {
+    console.log('Starting auto-fix for system dependencies...');
+    
+    const results = {
+      vcredist: { success: false, error: null },
+      klite: { success: false, error: null }
+    };
+
+    try {
+      // Ensure download directory exists
+      this.ensureDownloadDirectory();
+
+      // Fix Visual C++ Redistributable first (sequential execution)
+      try {
+        if (progressCallback) progressCallback('Downloading Visual C++ Redistributable...', 10);
+        results.vcredist = await this.fixVCRedist((subProgress) => {
+          if (progressCallback) progressCallback(`Visual C++ Redistributable: ${subProgress}%`, 10 + Math.round(subProgress * 0.4));
+        });
+        console.log('VCRedist fix completed:', results.vcredist);
+      } catch (error) {
+        console.error('VCRedist fix failed:', error);
+        results.vcredist = { success: false, error: error.message };
+      }
+
+      // Add delay between installations to prevent EBUSY
+      await new Promise(resolve => setTimeout(resolve, 3000));
+
+      // Fix K-Lite Codec Pack second (sequential execution)
+      try {
+        if (progressCallback) progressCallback('Downloading K-Lite Codec Pack...', 50);
+        results.klite = await this.fixKLiteCodec((subProgress) => {
+          if (progressCallback) progressCallback(`K-Lite Codec Pack: ${subProgress}%`, 50 + Math.round(subProgress * 0.4));
+        });
+        console.log('K-Lite fix completed:', results.klite);
+      } catch (error) {
+        console.error('K-Lite fix failed:', error);
+        results.klite = { success: false, error: error.message };
+      }
+
+      if (progressCallback) progressCallback('Auto-fix completed', 100);
+      
+      // Log results
+      console.log('Auto-fix results:', results);
+      
+      // Store fix history
+      this.addToFixHistory({
+        timestamp: Date.now(),
+        results: results,
+        success: results.vcredist.success && results.klite.success
+      });
+
+      return results;
+
+    } catch (error) {
+      console.error('Auto-fix failed:', error);
+      if (progressCallback) progressCallback(`Auto-fix failed: ${error.message}`, -1);
+      throw error;
+    }
+  }
+
+  // Fix Visual C++ Redistributable
+  async fixVCRedist(progressCallback = null) {
+    try {
+      console.log('Fixing Visual C++ Redistributable...');
+      
+      // Check if already installed
+      const isInstalled = await this.checkVCRedistInstalled();
+      if (isInstalled) {
+        console.log('Visual C++ Redistributable is already installed');
+        if (progressCallback) progressCallback('Visual C++ Redistributable already installed', 100);
+        return { success: true, version: 'already_installed', alreadyInstalled: true };
+      }
+      
+      // Get latest VCRedist release
+      if (progressCallback) progressCallback('Getting Visual C++ Redistributable info...', 10);
+      const vcredistInfo = await this.getVCRedistInfo();
+      if (!vcredistInfo.downloadUrl) {
+        throw new Error('Could not find VCRedist download URL');
+      }
+
+      // Download VCRedist
+      if (progressCallback) progressCallback('Downloading Visual C++ Redistributable...', 20);
+      const filePath = await this.downloadDependency(
+        vcredistInfo,
+        'vcredist',
+        (progress) => {
+          if (progressCallback) {
+            progressCallback(`Downloading Visual C++ Redistributable: ${progress}%`, 20 + Math.round(progress * 0.6));
+          }
+        }
+      );
+
+      // Install VCRedist silently
+      if (progressCallback) progressCallback('Installing Visual C++ Redistributable...', 80);
+      await this.installDependency(filePath, this.autoFixSources.vcredist.installArgs);
+
+      // Clean up
+      try {
+        if (fs.existsSync(filePath)) {
+          fs.unlinkSync(filePath);
+        }
+      } catch (cleanupError) {
+        console.warn('Could not clean up VCRedist file:', cleanupError.message);
+      }
+
+      if (progressCallback) progressCallback('Visual C++ Redistributable installed successfully', 100);
+      console.log('Visual C++ Redistributable installed successfully');
+      return { success: true, version: vcredistInfo.version };
+
+    } catch (error) {
+      console.error('VCRedist fix failed:', error);
+      if (progressCallback) progressCallback(`VCRedist installation failed: ${error.message}`, -1);
+      return { success: false, error: error.message };
+    }
+  }
+
+  // Fix K-Lite Codec Pack
+  async fixKLiteCodec(progressCallback = null) {
+    try {
+      console.log('Fixing K-Lite Codec Pack...');
+      
+      // Check if already installed
+      const isInstalled = await this.checkKLiteInstalled();
+      if (isInstalled) {
+        console.log('K-Lite Codec Pack is already installed');
+        if (progressCallback) progressCallback('K-Lite Codec Pack already installed', 100);
+        return { success: true, version: 'already_installed', alreadyInstalled: true };
+      }
+      
+      // Get K-Lite download info
+      if (progressCallback) progressCallback('Getting K-Lite Codec Pack info...', 10);
+      const kliteInfo = await this.getKLiteInfo();
+      if (!kliteInfo.downloadUrl) {
+        throw new Error('Could not find K-Lite download URL');
+      }
+
+      // Download K-Lite
+      if (progressCallback) progressCallback('Downloading K-Lite Codec Pack...', 20);
+      const filePath = await this.downloadDependency(
+        kliteInfo,
+        'klite',
+        (progress) => {
+          if (progressCallback) {
+            progressCallback(`Downloading K-Lite Codec Pack: ${progress}%`, 20 + Math.round(progress * 0.6));
+          }
+        }
+      );
+
+      // Install K-Lite silently
+      if (progressCallback) progressCallback('Installing K-Lite Codec Pack...', 80);
+      await this.installDependency(filePath, this.autoFixSources.klite.installArgs);
+
+      // Clean up
+      try {
+        if (fs.existsSync(filePath)) {
+          fs.unlinkSync(filePath);
+        }
+      } catch (cleanupError) {
+        console.warn('Could not clean up K-Lite file:', cleanupError.message);
+      }
+
+      if (progressCallback) progressCallback('K-Lite Codec Pack installed successfully', 100);
+      console.log('K-Lite Codec Pack installed successfully');
+      return { success: true, version: kliteInfo.version };
+
+    } catch (error) {
+      console.error('K-Lite fix failed:', error);
+      if (progressCallback) progressCallback(`K-Lite installation failed: ${error.message}`, -1);
+      return { success: false, error: error.message };
+    }
+  }
+
+  // Get VCRedist release information
+  async getVCRedistInfo() {
+    try {
+      const fetch = require('node-fetch');
+      const response = await fetch(this.autoFixSources.vcredist.url, {
+        headers: {
+          'User-Agent': 'DriveBox-App',
+          'Accept': 'application/vnd.github.v3+json'
+        },
+        timeout: 10000
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const release = await response.json();
+      const asset = release.assets.find(asset => 
+        this.autoFixSources.vcredist.filePattern.test(asset.name)
+      );
+
+      if (!asset) {
+        throw new Error('VCRedist executable not found in release assets');
+      }
+
+      return {
+        version: release.tag_name,
+        downloadUrl: asset.browser_download_url,
+        fileName: asset.name,
+        fileSize: asset.size
+      };
+
+    } catch (error) {
+      console.error('Failed to get VCRedist info:', error);
+      throw error;
+    }
+  }
+
+  // Get K-Lite download information
+  async getKLiteInfo() {
+    try {
+      // Use direct download URL for K-Lite (more reliable)
+      const directUrl = this.autoFixSources.klite.directUrl;
+      const fileName = path.basename(directUrl);
+
+      // Verify the URL is accessible
+      const fetch = require('node-fetch');
+      const response = await fetch(directUrl, { method: 'HEAD', timeout: 10000 });
+      
+      if (!response.ok) {
+        throw new Error(`K-Lite download URL not accessible: ${response.status}`);
+      }
+
+      const fileSize = parseInt(response.headers.get('content-length') || '0');
+
+      return {
+        version: 'latest',
+        downloadUrl: directUrl,
+        fileName: fileName,
+        fileSize: fileSize
+      };
+
+    } catch (error) {
+      console.error('Failed to get K-Lite info:', error);
+      throw error;
+    }
+  }
+
+  // Download dependency file
+  async downloadDependency(dependencyInfo, type, progressCallback = null) {
+    console.log(`Downloading ${type}:`, dependencyInfo.fileName);
+
+    const filePath = path.join(this.customDownloadPath, dependencyInfo.fileName);
+
+    try {
+      const fetch = require('node-fetch');
+      const response = await fetch(dependencyInfo.downloadUrl, {
+        headers: {
+          'User-Agent': 'DriveBox-App'
+        },
+        timeout: 30000
+      });
+
+      if (!response.ok) {
+        throw new Error(`Download failed: ${response.status} ${response.statusText}`);
+      }
+
+      const totalSize = dependencyInfo.fileSize || parseInt(response.headers.get('content-length') || '0');
+      let downloadedSize = 0;
+
+      // Create write stream
+      const fileStream = fs.createWriteStream(filePath);
+
+      // Download with progress tracking
+      return new Promise((resolve, reject) => {
+        response.body.on('data', (chunk) => {
+          downloadedSize += chunk.length;
+
+          if (progressCallback && totalSize > 0) {
+            const progress = Math.round((downloadedSize / totalSize) * 100);
+            progressCallback(progress);
+          }
+        });
+
+        response.body.on('error', (error) => {
+          fileStream.destroy();
+          if (fs.existsSync(filePath)) {
+            fs.unlinkSync(filePath);
+          }
+          reject(error);
+        });
+
+        response.body.on('end', () => {
+          fileStream.end();
+          console.log(`${type} download completed:`, filePath);
+          resolve(filePath);
+        });
+
+        response.body.pipe(fileStream);
+      });
+
+    } catch (error) {
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
+      throw error;
+    }
+  }
+
+  // Install dependency silently
+  async installDependency(filePath, installArgs, maxRetries = 3) {
+    let lastError;
+    
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        console.log(`Installing attempt ${attempt}/${maxRetries}:`, filePath, 'with args:', installArgs);
+        
+        return await new Promise((resolve, reject) => {
+          const { spawn } = require('child_process');
+          
+          // Add random delay to prevent simultaneous access
+          setTimeout(() => {
+            try {
+              const installer = spawn(filePath, installArgs, {
+                stdio: 'pipe',
+                windowsHide: true,
+                detached: false
+              });
+
+              let output = '';
+              let errorOutput = '';
+
+              installer.stdout.on('data', (data) => {
+                output += data.toString();
+              });
+
+              installer.stderr.on('data', (data) => {
+                errorOutput += data.toString();
+              });
+
+              installer.on('close', (code) => {
+                if (code === 0) {
+                  console.log(`Installation completed successfully on attempt ${attempt}`);
+                  resolve();
+                } else {
+                  console.error(`Installation failed with code: ${code} on attempt ${attempt}`);
+                  console.error('Error output:', errorOutput);
+                  reject(new Error(`Installation failed with exit code: ${code}\nError: ${errorOutput}`));
+                }
+              });
+
+              installer.on('error', (error) => {
+                console.error(`Installation process error on attempt ${attempt}:`, error);
+                reject(error);
+              });
+
+              // Set timeout for installation (10 minutes)
+              setTimeout(() => {
+                try {
+                  installer.kill('SIGTERM');
+                  setTimeout(() => {
+                    try {
+                      installer.kill('SIGKILL');
+                    } catch (e) {
+                      // Process already killed
+                    }
+                  }, 5000);
+                } catch (e) {
+                  // Process already terminated
+                }
+                reject(new Error('Installation timeout'));
+              }, 10 * 60 * 1000);
+              
+            } catch (spawnError) {
+              reject(spawnError);
+            }
+          }, attempt * 1000); // Incremental delay
+        });
+        
+      } catch (error) {
+        lastError = error;
+        console.warn(`Installation attempt ${attempt} failed:`, error.message);
+        
+        if (attempt < maxRetries) {
+          // Wait before retry, with exponential backoff
+          const delay = Math.min(5000 * Math.pow(2, attempt - 1), 30000);
+          console.log(`Waiting ${delay}ms before retry...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+      }
+    }
+    
+    throw new Error(`Installation failed after ${maxRetries} attempts. Last error: ${lastError.message}`);
+  }
+
+  // Get fix history
+  getFixHistory() {
+    return this.store.get('fixHistory', []);
+  }
+
+  // Add to fix history
+  addToFixHistory(fixInfo) {
+    const history = this.getFixHistory();
+    history.unshift(fixInfo);
+    
+    // Keep only last 10 fixes
+    if (history.length > 10) {
+      history.splice(10);
+    }
+    
+    this.store.set('fixHistory', history);
+  }
+
+  // Check if dependencies need fixing
+  async checkDependenciesStatus() {
+    const status = {
+      vcredist: await this.checkVCRedistInstalled(),
+      klite: await this.checkKLiteInstalled(),
+      needsFix: false
+    };
+
+    status.needsFix = !status.vcredist || !status.klite;
+    
+    return status;
+  }
+
+  // Check if VCRedist is installed
+  async checkVCRedistInstalled() {
+    try {
+      const { exec } = require('child_process');
+      
+      return new Promise((resolve) => {
+        exec('reg query "HKLM\\SOFTWARE\\Classes\\Installer\\Dependencies" /s /f "Microsoft Visual C++"', 
+          (error, stdout) => {
+            const hasVCRedist = !error && stdout.includes('Microsoft Visual C++');
+            resolve(hasVCRedist);
+          }
+        );
+      });
+    } catch (error) {
+      console.warn('Could not check VCRedist status:', error.message);
+      return false;
+    }
+  }
+
+  // Check if K-Lite is installed
+  async checkKLiteInstalled() {
+    try {
+      const kliteDir = 'C:\\Program Files (x86)\\K-Lite Codec Pack';
+      const kliteDir64 = 'C:\\Program Files\\K-Lite Codec Pack';
+      
+      return fs.existsSync(kliteDir) || fs.existsSync(kliteDir64);
+    } catch (error) {
+      console.warn('Could not check K-Lite status:', error.message);
+      return false;
+    }
+  }
+
+  // Quick fix method for UI integration
+  async quickFix(progressCallback = null) {
+    try {
+      if (progressCallback) progressCallback('Checking system dependencies...', 0);
+      
+      // Check current status
+      const status = await this.checkDependenciesStatus();
+      
+      if (!status.needsFix) {
+        if (progressCallback) progressCallback('All dependencies are already installed', 100);
+        return {
+          success: true,
+          message: 'All dependencies are already installed',
+          details: status
+        };
+      }
+
+      // Perform auto-fix
+      const results = await this.autoFixDependencies(progressCallback);
+      
+      return {
+        success: results.vcredist.success && results.klite.success,
+        message: 'Dependencies installation completed',
+        details: results
+      };
+
+    } catch (error) {
+      console.error('Quick fix failed:', error);
+      if (progressCallback) progressCallback(`Quick fix failed: ${error.message}`, -1);
+      
+      return {
+        success: false,
+        message: error.message,
+        details: null
+      };
+    }
   }
 }
 

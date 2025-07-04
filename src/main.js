@@ -2996,3 +2996,79 @@ del "%~f0" 2>nul
     }
   }
 }
+
+// Auto-fix IPC handlers
+ipcMain.handle('quick-fix', async (event, progressCallback) => {
+  try {
+    console.log('Starting quick fix...');
+    
+    // Create a progress callback that sends updates to renderer
+    const progressReporter = (message, progress) => {
+      event.sender.send('auto-fix-progress', { message, progress });
+      console.log(`Fix progress: ${message} - ${progress}%`);
+    };
+    
+    const result = await updateManager.quickFix(progressReporter);
+    console.log('Quick fix result:', result);
+    
+    return result;
+  } catch (error) {
+    console.error('Quick fix error:', error);
+    return {
+      success: false,
+      message: error.message,
+      details: null
+    };
+  }
+});
+
+ipcMain.handle('auto-fix-dependencies', async (event, progressCallback) => {
+  try {
+    console.log('Starting auto-fix dependencies...');
+    
+    const progressReporter = (message, progress) => {
+      event.sender.send('auto-fix-progress', { message, progress });
+      console.log(`Fix progress: ${message} - ${progress}%`);
+    };
+    
+    const result = await updateManager.autoFixDependencies(progressReporter);
+    console.log('Auto-fix dependencies result:', result);
+    
+    return result;
+  } catch (error) {
+    console.error('Auto-fix dependencies error:', error);
+    return {
+      vcredist: { success: false, error: error.message },
+      klite: { success: false, error: error.message }
+    };
+  }
+});
+
+ipcMain.handle('check-dependencies-status', async () => {
+  try {
+    console.log('Checking dependencies status...');
+    const status = await updateManager.checkDependenciesStatus();
+    console.log('Dependencies status:', status);
+    return status;
+  } catch (error) {
+    console.error('Check dependencies status error:', error);
+    return {
+      vcredist: false,
+      klite: false,
+      needsFix: true,
+      error: error.message
+    };
+  }
+});
+
+ipcMain.handle('get-fix-history', async () => {
+  try {
+    console.log('Getting fix history...');
+    const history = updateManager.getFixHistory();
+    console.log('Fix history:', history);
+    return history;
+  } catch (error) {
+    console.error('Get fix history error:', error);
+    return [];
+  }
+});

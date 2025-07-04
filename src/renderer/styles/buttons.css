@@ -256,6 +256,36 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.15);
 }
 
+/* Fix Button - Special styling */
+.btn-fix {
+  background: linear-gradient(135deg, #ff6b6b, #ff8e8e) !important;
+  border-color: #ff5252 !important;
+  color: white !important;
+  font-weight: 600 !important;
+}
+
+.btn-fix:hover {
+  background: linear-gradient(135deg, #ff5252, #ff7979) !important;
+  border-color: #ff4444 !important;
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 
+    0 6px 16px rgba(255, 82, 82, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
+}
+
+[data-theme="dark"] .btn-fix {
+  background: linear-gradient(135deg, #e74c3c, #ec7063) !important;
+  border-color: #c0392b !important;
+}
+
+[data-theme="dark"] .btn-fix:hover {
+  background: linear-gradient(135deg, #c0392b, #e74c3c) !important;
+  border-color: #a93226 !important;
+  box-shadow: 
+    0 6px 16px rgba(231, 76, 60, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+}
+
 /* Refresh Button */
 .refresh-button {
   display: inline-flex;

@@ -26,6 +26,11 @@
                 </div>
             </div>
             <div class="header-actions">
+                <button id="autoFixBtn" class="btn-footer btn-fix"
+                        type="button"
+                        aria-label="Tự động sửa lỗi hệ thống">
+                    🔧 Fix lỗi
+                </button>
                 <button type="button" class="refresh-button" id="refreshBtn">
                     <span class="refresh-button__text">Refresh</span>
                     <span class="refresh-button__icon">
@@ -168,6 +173,48 @@
             <span class="close">&times;</span>
             <h2 id="modalTitle"></h2>
             <div id="modalBody"></div>
+        </div>
+    </div>
+
+    <!-- Auto Fix Modal -->
+    <div id="autoFixModal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close" id="autoFixClose">&times;</span>
+            <h2>🔧 Auto Fix - Sửa lỗi tự động</h2>
+            <div class="auto-fix-content">
+                <div class="fix-description">
+                    <p>Tính năng này sẽ tự động tải và cài đặt:</p>
+                    <ul>
+                        <li>✅ Visual C++ Redistributable (mới nhất)</li>
+                        <li>✅ K-Lite Codec Pack Mega (mới nhất)</li>
+                    </ul>
+                    <p><strong>Lưu ý:</strong> Quá trình này có thể mất vài phút và sẽ cài đặt tự động.</p>
+                </div>
+                
+                <div class="fix-status" id="fixStatus">
+                    <div class="status-message" id="fixStatusMessage">Sẵn sàng để bắt đầu</div>
+                    <div class="progress-container">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="fixProgressFill"></div>
+                        </div>
+                        <div class="progress-text" id="fixProgressText">0%</div>
+                    </div>
+                </div>
+                
+                <div class="fix-actions">
+                    <button id="startFixBtn" class="btn btn-primary">
+                        🚀 Bắt đầu Fix
+                    </button>
+                    <button id="cancelFixBtn" class="btn btn-secondary">
+                        ❌ Hủy
+                    </button>
+                </div>
+                
+                <div class="fix-results" id="fixResults" style="display: none;">
+                    <h3>Kết quả:</h3>
+                    <div id="fixResultsContent"></div>
+                </div>
+            </div>
         </div>
     </div>
 

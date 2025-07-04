@@ -50,5 +50,22 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.removeAllListeners('update-download-progress');
     ipcRenderer.removeAllListeners('show-release-notes');
     ipcRenderer.removeAllListeners('update-download-error');
-  }
+  },
+
+  // Auto-fix APIs
+  quickFix: () => ipcRenderer.invoke('quick-fix'),
+  autoFixDependencies: () => ipcRenderer.invoke('auto-fix-dependencies'),
+  checkDependenciesStatus: () => ipcRenderer.invoke('check-dependencies-status'),
+  getFixHistory: () => ipcRenderer.invoke('get-fix-history'),
+  
+  // Auto-fix progress listener
+  onAutoFixProgress: (callback) => {
+    ipcRenderer.on('auto-fix-progress', (event, data) => callback(data));
+  },
+  removeAutoFixProgressListener: () => {
+    ipcRenderer.removeAllListeners('auto-fix-progress');
+  },
+
+  // Expose ipcRenderer for advanced usage
+  ipcRenderer: ipcRenderer
 });
