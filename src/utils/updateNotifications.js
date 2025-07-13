@@ -214,7 +214,7 @@ class UpdateNotificationSystem {
   // Emit notification event (to be implemented by the renderer)
   emitNotification(action, notification) {
     // This will be handled by the main process to send to renderer
-    console.log(`Notification ${action}:`, notification);
+    
   }
 
   // Handle notification action

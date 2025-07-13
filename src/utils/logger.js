@@ -92,7 +92,7 @@ class Logger {
         }));
       }
       
-      console.log('Logger initialized successfully');
+
     } catch (error) {
       console.error('Failed to initialize logger:', error);
     }

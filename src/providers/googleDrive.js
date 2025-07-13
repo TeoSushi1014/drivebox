@@ -91,7 +91,6 @@ class GoogleDriveProvider {
         });
       }
       
-      console.log(`File uploaded to Google Drive: ${fileName}`);
       return result.data;
     } catch (error) {
       console.error('Google Drive upload failed:', error);
@@ -123,7 +122,6 @@ class GoogleDriveProvider {
       return new Promise((resolve, reject) => {
         response.data
           .on('end', () => {
-            console.log(`File downloaded from Google Drive: ${fileName}`);
             resolve();
           })
           .on('error', reject)
@@ -142,21 +140,17 @@ class GoogleDriveProvider {
       const parentFolder = await this.findFolderByPath(path.dirname(remotePath));
       
       if (!parentFolder) {
-        console.log(`Folder not found, cannot delete: ${remotePath}`);
         return;
       }
       
       const file = await this.findFile(fileName, parentFolder.id);
       if (!file) {
-        console.log(`File not found, cannot delete: ${remotePath}`);
         return;
       }
       
       await this.drive.files.delete({
         fileId: file.id
       });
-      
-      console.log(`File deleted from Google Drive: ${fileName}`);
     } catch (error) {
       console.error('Google Drive delete failed:', error);
       throw error;
@@ -178,15 +172,12 @@ class GoogleDriveProvider {
     try {
       const folder = await this.findFolderByPath(folderPath);
       if (!folder) {
-        console.log(`Folder not found, cannot delete: ${folderPath}`);
         return;
       }
       
       await this.drive.files.delete({
         fileId: folder.id
       });
-      
-      console.log(`Folder deleted from Google Drive: ${folderPath}`);
     } catch (error) {
       console.error('Google Drive folder deletion failed:', error);
       throw error;

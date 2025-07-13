@@ -30,7 +30,6 @@ class DropboxProvider {
       const response = await this.dbx.authTokenRevoke();
       // Note: Dropbox API v2 doesn't use refresh tokens the same way
       // This is a placeholder for token refresh logic
-      console.log('Token refreshed');
     } catch (error) {
       console.error('Token refresh failed:', error);
       throw error;
@@ -98,7 +97,6 @@ class DropboxProvider {
         result = await this.uploadLargeFile(fileContent, remotePath);
       }
       
-      console.log(`File uploaded to Dropbox: ${remotePath}`);
       return result;
     } catch (error) {
       console.error('Dropbox upload failed:', error);
@@ -170,7 +168,6 @@ class DropboxProvider {
       await fs.ensureDir(path.dirname(localPath));
       await fs.writeFile(localPath, response.fileBinary);
       
-      console.log(`File downloaded from Dropbox: ${remotePath}`);
       return response.metadata;
     } catch (error) {
       console.error('Dropbox download failed:', error);
@@ -189,12 +186,10 @@ class DropboxProvider {
         path: remotePath
       });
       
-      console.log(`File deleted from Dropbox: ${remotePath}`);
       return result;
     } catch (error) {
       // Ignore file not found errors
       if (error.status === 409) {
-        console.log(`File not found, cannot delete: ${remotePath}`);
         return;
       }
       console.error('Dropbox delete failed:', error);
@@ -214,12 +209,10 @@ class DropboxProvider {
         autorename: false
       });
       
-      console.log(`Folder created on Dropbox: ${folderPath}`);
       return result;
     } catch (error) {
       // Ignore folder already exists errors
       if (error.status === 409) {
-        console.log(`Folder already exists: ${folderPath}`);
         return;
       }
       console.error('Dropbox folder creation failed:', error);
@@ -238,12 +231,10 @@ class DropboxProvider {
         path: folderPath
       });
       
-      console.log(`Folder deleted from Dropbox: ${folderPath}`);
       return result;
     } catch (error) {
       // Ignore folder not found errors
       if (error.status === 409) {
-        console.log(`Folder not found, cannot delete: ${folderPath}`);
         return;
       }
       console.error('Dropbox folder deletion failed:', error);

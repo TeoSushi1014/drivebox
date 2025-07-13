@@ -83,7 +83,7 @@ class SyncEngine extends EventEmitter {  constructor(options = {}) {
       this.performIncrementalSync();
     }, this.syncInterval);
     
-    console.log('Sync engine started');
+
   }
 
   async stopSync() {
@@ -104,7 +104,7 @@ class SyncEngine extends EventEmitter {  constructor(options = {}) {
     
     await this.saveMetadata();
     this.emit('syncStopped');
-    console.log('Sync engine stopped');
+
   }
 
   startWatching() {

@@ -30,9 +30,8 @@ class AppUpdateIntegration {
   }
 
   // Method to be called from your UI
-  async checkForUpdates() {
-    try {
-      console.log('Checking for updates...');
+      async checkForUpdates() {
+        try {
       const updateInfo = await this.updateManager.checkForUpdates(false);
       
       if (updateInfo.hasUpdate) {
@@ -89,7 +88,7 @@ class AppUpdateIntegration {
 
   // Show update progress (implement with your UI)
   showUpdateProgress(message) {
-    console.log('Update progress:', message);
+    
     // Implement with your UI framework
     // Example: show a progress dialog or notification
   }

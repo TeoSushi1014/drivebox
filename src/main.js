@@ -16,9 +16,13 @@ const https = require('https');
 const http = require('http');
 const { URL } = require('url');
 const UpdateManager = require('./utils/updateManager');
+const MediaFireProvider = require('./providers/mediafire');
 
 // Initialize update manager
 const updateManager = new UpdateManager();
+
+// Initialize MediaFire provider
+const mediaFireProvider = new MediaFireProvider();
 
 // Set proper encoding for console output
 if (process.platform === 'win32') {
@@ -31,12 +35,9 @@ if (process.platform === 'win32') {
     
     // Set environment variables for proper UTF-8 handling
     process.env.PYTHONIOENCODING = 'utf-8';
-    
-    console.log('Console encoding configured for UTF-8');
   } catch (e) {
-    console.log('Could not set UTF-8 encoding for console:', e.message);
+    // UTF-8 encoding setup failed
   }
-}
 
 // Initialize electron-store
 const store = new Store();
@@ -45,7 +46,6 @@ const store = new Store();
 const gotTheLock = app.requestSingleInstanceLock();
 
 if (!gotTheLock) {
-  console.log('Another instance is running, quitting...');
   app.quit();
 } else {
   app.on('second-instance', (event, commandLine, workingDirectory) => {
@@ -251,60 +251,80 @@ async function getDirectDownloadUrl(url) {
   try {
     console.log('Attempting to parse MediaFire URL:', url);
     
-    // Set proper headers to mimic a browser request
-    const response = await fetch(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.5',
-        'Accept-Encoding': 'gzip, deflate, br',
-        'DNT': '1',
-        'Connection': 'keep-alive',
-        'Upgrade-Insecure-Requests': '1'
-      }
+    // Use the MediaFire provider to get direct download URL
+    const fileInfo = await mediaFireProvider.getFileInfo(url);
+    
+    console.log('MediaFire provider returned:', {
+      directUrl: fileInfo.directUrl,
+      contentType: fileInfo.contentType,
+      isDirectDownload: fileInfo.isDirectDownload
     });
     
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-    }
-    
-    const html = await response.text();
-    console.log('MediaFire page loaded, parsing for download link...');
-    
-    // Multiple patterns to find the download link
-    const patterns = [
-      /href="(https:\/\/download\d+\.mediafire\.com[^"]+)"/,
-      /"(https:\/\/download\d+\.mediafire\.com[^"]+)"/,
-      /window\.location\.href\s*=\s*["'](https:\/\/download\d+\.mediafire\.com[^"']+)["']/,
-      /DownloadUrl["']?\s*:\s*["'](https:\/\/download\d+\.mediafire\.com[^"']+)["']/
-    ];
-    
-    for (const pattern of patterns) {
-      const match = html.match(pattern);
-      if (match && match[1]) {
-        console.log('Found MediaFire direct link:', match[1]);
-        return match[1];
-      }
-    }
-    
-    // If no direct link found, try to find the file ID and construct the link
-    const fileIdMatch = url.match(/\/file\/([^\/]+)\//);
-    if (fileIdMatch) {
-      console.log('Trying alternative MediaFire approach with file ID:', fileIdMatch[1]);
-      // Sometimes MediaFire uses a different pattern
-      const alternativePattern = new RegExp(`https://download\\d+\\.mediafire\\.com/[^"']+${fileIdMatch[1]}[^"']*`, 'i');
-      const altMatch = html.match(alternativePattern);
-      if (altMatch) {
-        console.log('Found alternative MediaFire link:', altMatch[0]);
-        return altMatch[0];
-      }
-    }
-    
-    console.error('MediaFire HTML content (first 1000 chars):', html.substring(0, 1000));
-    throw new Error('Could not find direct download link in MediaFire page');
+    return fileInfo.directUrl;
   } catch (error) {
-    console.error('MediaFire parse error:', error);
-    throw new Error(`Failed to parse MediaFire link: ${error.message}`);
+    console.error('MediaFire provider failed, trying fallback method:', error.message);
+    
+    // Fallback to the old method if the provider fails
+    try {
+      console.log('Using fallback method for MediaFire URL...');
+      
+      const response = await fetch(url, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+          'Accept-Language': 'en-US,en;q=0.9',
+          'Accept-Encoding': 'gzip, deflate, br',
+          'DNT': '1',
+          'Connection': 'keep-alive',
+          'Upgrade-Insecure-Requests': '1',
+          'Sec-Fetch-Dest': 'document',
+          'Sec-Fetch-Mode': 'navigate',
+          'Sec-Fetch-Site': 'none',
+          'Sec-Fetch-User': '?1'
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      const html = await response.text();
+      console.log('MediaFire page loaded via fallback, parsing for download link...');
+      
+      // Multiple patterns to find the download link
+      const patterns = [
+        /href="(https:\/\/download\d+\.mediafire\.com[^"]+)"/,
+        /"(https:\/\/download\d+\.mediafire\.com[^"]+)"/,
+        /window\.location\.href\s*=\s*["'](https:\/\/download\d+\.mediafire\.com[^"']+)["']/,
+        /DownloadUrl["']?\s*:\s*["'](https:\/\/download\d+\.mediafire\.com[^"']+)["']/
+      ];
+      
+      for (const pattern of patterns) {
+        const match = html.match(pattern);
+        if (match && match[1]) {
+          console.log('Found MediaFire direct link via fallback:', match[1]);
+          return match[1];
+        }
+      }
+      
+      // If no direct link found, try to find the file ID and construct the link
+      const fileIdMatch = url.match(/\/file\/([^\/]+)\//);
+      if (fileIdMatch) {
+        console.log('Trying alternative MediaFire approach with file ID:', fileIdMatch[1]);
+        const alternativePattern = new RegExp(`https://download\\d+\\.mediafire\\.com/[^"']+${fileIdMatch[1]}[^"']*`, 'i');
+        const altMatch = html.match(alternativePattern);
+        if (altMatch) {
+          console.log('Found alternative MediaFire link via fallback:', altMatch[0]);
+          return altMatch[0];
+        }
+      }
+      
+      console.error('MediaFire HTML content (first 1000 chars):', html.substring(0, 1000));
+      throw new Error('Could not find direct download link in MediaFire page via fallback method');
+    } catch (fallbackError) {
+      console.error('Both MediaFire provider and fallback method failed:', fallbackError.message);
+      throw new Error(`Failed to parse MediaFire link: ${error.message} (Provider failed: ${error.message}, Fallback failed: ${fallbackError.message})`);
+    }
   }
 }
 
@@ -2939,7 +2959,8 @@ del "${backupPath}" 2>nul
 
 :END
 del "%~f0" 2>nul
-      `.trim();
+`
+      .trim();
       
       const batchPath = path.join(currentDir, 'update-install.bat');
       fs.writeFileSync(batchPath, batchScript);
@@ -3072,3 +3093,4 @@ ipcMain.handle('get-fix-history', async () => {
     return [];
   }
 });
+}

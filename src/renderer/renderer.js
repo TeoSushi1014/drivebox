@@ -63,7 +63,6 @@ class DriveBoxApp {    constructor() {
           // Listen for update download progress if available
         if (window.electronAPI.onUpdateDownloadProgress) {
             window.electronAPI.onUpdateDownloadProgress((data) => {
-                console.log('Update download progress:', data);                // Use the same progress bar for update downloads with enhanced data
                 if (data.progress !== undefined && this.isDownloading && this.currentDownload?.app?.id === 'app-update') {
                     this.updateEnhancedProgressBar({
                         progress: data.progress,
@@ -88,18 +87,8 @@ class DriveBoxApp {    constructor() {
             const fileStatus = document.getElementById('downloadFileStatus');
 
             if (!progressContainer) {
-                console.warn('Progress container not found');
                 return;
-            }            // Debug log to see what data we're getting
-            console.log('Progress data:', data);
-            console.log('Data types:', {
-                downloadedSize: typeof data.downloadedSize, 
-                totalSize: typeof data.totalSize,
-                speed: typeof data.speed,
-                downloadedSizeValue: data.downloadedSize,
-                totalSizeValue: data.totalSize,
-                speedValue: data.speed
-            });
+            }
 
             // Show progress bar when downloading
             if (this.isDownloading) {
@@ -187,7 +176,7 @@ class DriveBoxApp {    constructor() {
                         statusParts.push(`còn ${data.eta}`);
                     }
                 } catch (parseError) {
-                    console.warn('Error parsing progress data:', parseError);
+                    // Error parsing progress data
                 }
                   if (statusParts.length > 0) {
                     fileStatus.textContent = statusParts.join(' • ');
@@ -209,7 +198,7 @@ class DriveBoxApp {    constructor() {
             // Update queue info
             this.updateQueueDisplay();
         } catch (error) {
-            console.error('Error updating progress bar:', error);
+            // Error updating progress bar
         }
     }
 
@@ -286,7 +275,7 @@ class DriveBoxApp {    constructor() {
         // Start download immediately
         this.processDownload(app, card);
     }    async processDownload(app, card) {
-        console.log('Starting download for app:', app.name, 'ID:', app.id); // Debug
+
         this.isDownloading = true;
         this.currentDownload = { app, card };
         
@@ -313,7 +302,7 @@ class DriveBoxApp {    constructor() {
             }
             
             const result = await window.electronAPI.downloadApp(app);            if (result && result.success) {
-                console.log('Download successful for:', app.name, 'Path:', result.path); // Debug
+    
                 
                 // Update local installed apps immediately
                 this.installedApps[app.id] = {
@@ -322,25 +311,24 @@ class DriveBoxApp {    constructor() {
                     path: result.path
                 };
                 
-                console.log('Updated installedApps:', this.installedApps[app.id]); // Debug
-                console.log('Full installedApps after update:', this.installedApps); // Debug
+
                 
                 this.updateStatusBar(`✅ ${app.name} tải xuống thành công! Vị trí: ${result.path}`);
                 this.showToast(`Đã tải xuống thành công ${app.name}`, 'success');
                 
                 // Force immediate UI update multiple times to ensure it takes effect
                 setTimeout(() => {
-                    console.log('Force updating card UI after success - attempt 1'); // Debug
+    
                     this.updateAppCard(card, app);
                 }, 100);
                 
                 setTimeout(() => {
-                    console.log('Force updating card UI after success - attempt 2'); // Debug
+    
                     this.updateAppCard(card, app);
                 }, 500);
                 
                 setTimeout(() => {
-                    console.log('Force updating card UI after success - attempt 3'); // Debug
+    
                     this.updateAppCard(card, app);
                 }, 1000);
                 
@@ -367,19 +355,19 @@ class DriveBoxApp {    constructor() {
                     progressContainer.classList.remove('active');
                 }, 2000);
             }        } finally {
-            console.log('Download process finished for:', app.name); // Debug
+
             
             this.hideProgress(card);
             this.isDownloading = false;
             this.currentDownload = null;
             
             // Force immediate UI update
-            console.log('Updating card UI for:', app.name); // Debug
+
             this.updateAppCard(card, app);
             
             // Additional delay to ensure backend has updated the installed apps
             setTimeout(async () => {
-                console.log('Secondary refresh for:', app.name); // Debug
+    
                 await this.autoRefreshApps();
             }, 500);
             
@@ -405,10 +393,7 @@ class DriveBoxApp {    constructor() {
                 window.electronAPI.getInstalledApps()
             ]);
             
-            console.log('=== LOAD APPS DEBUG ===');
-            console.log('Available apps:', apps);
-            console.log('Installed apps from backend:', installedApps);
-            console.log('======================');
+            
             
             this.apps = apps;
             this.installedApps = installedApps;
@@ -422,9 +407,9 @@ class DriveBoxApp {    constructor() {
         }
     }    async loadInstalledApps() {
         try {
-            console.log('Loading installed apps from backend...'); // Debug
+    
             this.installedApps = await window.electronAPI.getInstalledApps();
-            console.log('Loaded installed apps:', this.installedApps); // Debug
+    
             // Don't re-render here to avoid infinite loops
         } catch (error) {
             console.error('Error loading installed apps:', error);
@@ -432,7 +417,7 @@ class DriveBoxApp {    constructor() {
     }// Auto-refresh method to keep UI in sync
     async autoRefreshApps() {
         try {
-            console.log('Auto-refreshing apps list...'); // Debug
+    
             
             // Store current state for comparison
             const previousInstalledApps = JSON.stringify(this.installedApps);
@@ -444,15 +429,15 @@ class DriveBoxApp {    constructor() {
             const currentInstalledApps = JSON.stringify(this.installedApps);
             
             if (previousInstalledApps !== currentInstalledApps) {
-                console.log('Installed apps changed, re-rendering...'); // Debug
+    
                 this.renderApps();
             } else {
                 // Force re-render anyway to ensure UI consistency
-                console.log('Force re-rendering to ensure UI consistency...'); // Debug
+    
                 this.renderApps();
             }
             
-            console.log('Auto-refresh completed'); // Debug
+    
         } catch (error) {
             console.error('Auto-refresh error:', error);
         }
@@ -507,13 +492,7 @@ class DriveBoxApp {    constructor() {
             appsGrid.appendChild(card);
         });
     }    updateAppCard(card, app) {
-        console.log('=== UPDATING CARD DEBUG ===');
-        console.log('App:', app.name, 'ID:', app.id);
-        console.log('installedApps[app.id]:', this.installedApps[app.id]);
-        console.log('Full installedApps:', this.installedApps);
-        console.log('Is installed check:', !!this.installedApps[app.id]);
-        console.log('Currently downloading:', this.isDownloading && this.currentDownload && this.currentDownload.app.id === app.id);
-        console.log('========================');
+
         
         const statusBadge = card.querySelector('.status-badge');
         const installBtn = card.querySelector('[data-action="install"]');
@@ -527,14 +506,8 @@ class DriveBoxApp {    constructor() {
         const hasUpdate = isInstalled && installedVersion !== app.version;
         const isCurrentlyDownloading = this.isDownloading && this.currentDownload && this.currentDownload.app.id === app.id;
         
-        console.log('Card update details:', {
-            appId: app.id,
-            isInstalled: !!isInstalled,
-            hasUpdate,
-            isCurrentlyDownloading,
-            downloadState: this.isDownloading,
-            currentDownloadId: this.currentDownload?.app?.id
-        }); // Debug
+
+
         
         // Reset all buttons - both class and inline style
         // Note: Install button might be removed for installed apps, so handle separately
@@ -555,7 +528,7 @@ class DriveBoxApp {    constructor() {
         
         if (isCurrentlyDownloading) {
             // Currently downloading
-            console.log('Setting downloading status for:', app.name); // Debug
+
             if (statusBadge) {
                 statusBadge.textContent = 'Đang tải xuống...';
                 statusBadge.className = 'status-badge downloading';
@@ -565,27 +538,27 @@ class DriveBoxApp {    constructor() {
                 if (btn) btn.disabled = true;
             });        } else if (!isInstalled) {
             // Not installed - show download button
-            console.log('Setting not-installed status for:', app.name); // Debug
+
             if (statusBadge) {
                 statusBadge.textContent = 'Chưa cài đặt';
                 statusBadge.className = 'status-badge not-installed';
             }
             if (installBtn) {
-                console.log('Showing install button for:', app.name); // Debug
+
                 installBtn.classList.remove('hidden');
                 installBtn.style.display = ''; // Remove inline style to use CSS default
                 installBtn.textContent = 'Tải xuống';
             }
         } else if (hasUpdate) {
             // Update available - remove download button completely, show other buttons
-            console.log('Setting update-available status for:', app.name); // Debug
+
             if (statusBadge) {
                 statusBadge.textContent = 'Có bản cập nhật';
                 statusBadge.className = 'status-badge update-available';
             }
             // Xóa hoàn toàn nút download vì app đã được cài đặt
             if (installBtn) {
-                console.log('Removing install button (update case) for:', app.name); // Debug
+
                 installBtn.remove(); // Xóa hoàn toàn khỏi DOM
             }
             if (openBtn) {
@@ -610,18 +583,14 @@ class DriveBoxApp {    constructor() {
             }
         } else {
             // Up to date / Installed - remove download button completely
-            console.log('Setting installed status for:', app.name); // Debug
+
             if (statusBadge) {
                 statusBadge.textContent = 'Đã cài đặt';
                 statusBadge.className = 'status-badge installed';
             }
             // Xóa hoàn toàn nút download vì app đã được cài đặt
             if (installBtn) {
-                console.log('Removing install button for:', app.name, 'Button found:', !!installBtn); // Debug
                 installBtn.remove(); // Xóa hoàn toàn khỏi DOM
-                console.log('Install button removed from DOM'); // Debug
-            } else {
-                console.log('Install button not found for:', app.name); // Debug
             }
             if (openBtn) {
                 openBtn.classList.remove('hidden');
@@ -664,7 +633,7 @@ class DriveBoxApp {    constructor() {
     }    setupEventListeners() {        
         // Header refresh button
         document.getElementById('refreshBtn').addEventListener('click', async () => {
-            console.log('Manual refresh triggered'); // Debug
+    
             this.showToast('Đang làm mới danh sách...', 'info');
             this.updateStatusBar('🔄 Refreshing apps list...');
             
@@ -702,7 +671,7 @@ class DriveBoxApp {    constructor() {
                 
                 try {
                     switch (action) {                        case 'pause':
-                            console.log('Pause button clicked, currentDownload:', this.currentDownload); // Debug
+
                             if (this.currentDownload) {
                                 if (window.electronAPI && typeof window.electronAPI.pauseDownload === 'function') {
                                     try {
@@ -725,7 +694,7 @@ class DriveBoxApp {    constructor() {
                                 this.showToast('Không có tải xuống nào đang diễn ra', 'error');
                             }
                             break;                        case 'resume':
-                            console.log('Resume button clicked, currentDownload:', this.currentDownload); // Debug
+
                             if (this.currentDownload) {
                                 if (window.electronAPI && typeof window.electronAPI.resumeDownload === 'function') {
                                     try {
@@ -748,7 +717,7 @@ class DriveBoxApp {    constructor() {
                                 this.showToast('Không có tải xuống nào để tiếp tục', 'error');
                             }
                             break;                        case 'cancel':
-                            console.log('Cancel button clicked, currentDownload:', this.currentDownload); // Debug
+
                             if (this.currentDownload) {
                                 if (window.electronAPI && typeof window.electronAPI.cancelDownload === 'function') {
                                     try {
@@ -835,12 +804,7 @@ class DriveBoxApp {    constructor() {
         document.addEventListener('keydown', (e) => {
             if (e.ctrlKey && e.key === 'd') {
                 e.preventDefault();
-                console.log('=== DEBUG INFO ===');
-                console.log('isDownloading:', this.isDownloading);
-                console.log('currentDownload:', this.currentDownload);
-                console.log('installedApps:', this.installedApps);
-                console.log('downloadQueue:', this.downloadQueue);
-                console.log('==================');
+                
                 
                 this.showToast('Debug info logged to console (F12)', 'info');
             }
@@ -855,7 +819,7 @@ class DriveBoxApp {    constructor() {
     }
 
     setupAutoFixModal() {
-        console.log('Setting up auto fix modal...');
+
         
         // Use setTimeout to ensure DOM is fully loaded
         setTimeout(() => {
@@ -865,20 +829,12 @@ class DriveBoxApp {    constructor() {
             const startFixBtn = document.getElementById('startFixBtn');
             const cancelFixBtn = document.getElementById('cancelFixBtn');
 
-            console.log('Auto fix elements found:', {
-                autoFixBtn: !!autoFixBtn,
-                autoFixModal: !!autoFixModal,
-                autoFixClose: !!autoFixClose,
-                startFixBtn: !!startFixBtn,
-                cancelFixBtn: !!cancelFixBtn
-            });
-
             // Open modal
             if (autoFixBtn) {
-                console.log('Adding click listener to auto fix button');
+
                 autoFixBtn.addEventListener('click', (e) => {
                     e.preventDefault();
-                    console.log('Auto fix button clicked!');
+
                     this.openAutoFixModal();
                 });
             } else {
@@ -918,10 +874,10 @@ class DriveBoxApp {    constructor() {
     }
 
     openAutoFixModal() {
-        console.log('Opening auto fix modal...');
+
         const modal = document.getElementById('autoFixModal');
         if (modal) {
-            console.log('Modal found, removing hidden class');
+
             modal.classList.remove('hidden');
             this.resetAutoFixModal();
         } else {
@@ -980,7 +936,7 @@ class DriveBoxApp {    constructor() {
 
             // Listen for progress updates
             const progressListener = (data) => {
-                console.log('Fix progress received:', data);
+
                 
                 if (statusMessage && data.message) statusMessage.textContent = data.message;
                 
@@ -1122,13 +1078,10 @@ class DriveBoxApp {    constructor() {
         return html;
     }    async installApp(app, card) {
         // Kiểm tra xem app đã được cài đặt chưa trước khi download
-        console.log('=== INSTALL APP CHECK ===');
-        console.log('App:', app.name, 'ID:', app.id);
-        console.log('Current installedApps:', this.installedApps);
-        console.log('Is already installed:', !!this.installedApps[app.id]);
+
         
         if (this.installedApps[app.id]) {
-            console.log('App already installed, showing message');
+
             this.showToast(`${app.name} đã được cài đặt rồi!`, 'warning');
             this.updateStatusBar(`${app.name} đã được cài đặt`);
             
@@ -1137,7 +1090,7 @@ class DriveBoxApp {    constructor() {
             return;
         }
         
-        console.log('App not installed, proceeding with download');
+
         this.addToDownloadQueue(app, card);
     }
 
@@ -1172,7 +1125,7 @@ class DriveBoxApp {    constructor() {
                 folderPath = `Downloads\\${appId}`;
             }
             
-            console.log('Opening folder:', folderPath); // Debug
+    
             this.updateStatusBar('Đang mở thư mục...');
             this.showToast('Đang mở thư mục...', 'info');
             
@@ -1390,7 +1343,7 @@ class DriveBoxApp {    constructor() {
         if (resumeBtn) resumeBtn.style.display = 'flex';
     }    showToast(message, type = 'info') {
         // Toast notifications disabled - logging to console instead
-        console.log(`Toast (${type}):`, message);
+
         return;
     }
 
@@ -1592,7 +1545,7 @@ class DriveBoxApp {    constructor() {
                         const releaseNotesBtn = document.getElementById('viewReleaseNotesBtn');                        if (downloadBtn) {
                             downloadBtn.addEventListener('click', (e) => {
                                 e.preventDefault();
-                                console.log('Download button clicked');
+                        
                                 
                                 // Disable button to prevent multiple clicks
                                 downloadBtn.disabled = true;
@@ -1626,13 +1579,13 @@ class DriveBoxApp {    constructor() {
                                 releaseNotesBtn.disabled = true;
                                 releaseNotesBtn.style.opacity = '0.6';
                                 
-                                console.log('Release notes button clicked');
+                        
                                 
                                 setTimeout(() => {
                                     try {
                                         const version = releaseNotesBtn.getAttribute('data-version');
                                         const notesEncoded = releaseNotesBtn.getAttribute('data-notes');
-                                        console.log('Version:', version, 'Notes encoded:', notesEncoded);
+                                
                                         
                                         // Better decoding of HTML entities
                                         let notes = notesEncoded || '';
@@ -1644,7 +1597,7 @@ class DriveBoxApp {    constructor() {
                                                 .replace(/&lt;/g, '<')
                                                 .replace(/&gt;/g, '>');
                                         }
-                                          console.log('Decoded notes:', notes);
+                                  
                                           if (!notes || notes.trim() === '') {
                                             notes = 'Không có thông tin chi tiết về bản cập nhật này.';
                                         }
@@ -1777,14 +1730,14 @@ class DriveBoxApp {    constructor() {
         this.updateStatusBar(`🔔 Update available: v${updateInfo.latestVersion} - Click to download`);
     }    // Show detailed update toast
     showDetailedUpdateToast(notification) {
-        // Update toast disabled - showing only status bar notification        console.log('Update notification:', notification);
+        // Update toast disabled - showing only status bar notification
         return;
     }
 
     // Download Update
     async downloadUpdate(updateInfo) {
         try {
-            console.log('Starting app update download:', updateInfo);
+    
             
             // Show more detailed progress
             this.showToast('🔄 Chuẩn bị tải xuống cập nhật...', 'info');
@@ -1918,7 +1871,7 @@ class DriveBoxApp {    constructor() {
             // Focus on modal for accessibility
             modal.focus();
             
-            console.log('Release notes modal displayed for version:', version);
+    
               } catch (error) {
             console.error('Error showing release notes modal:', error);
             this.showToast('Lỗi khi hiển thị thông tin cập nhật', 'error');
@@ -1931,7 +1884,7 @@ class DriveBoxApp {    constructor() {
             return '<p>Không có thông tin chi tiết.</p>';
         }
         
-        console.log('Original notes:', notes);
+
         
         // Clean up and prepare the text
         let formatted = notes
@@ -2033,6 +1986,6 @@ document.addEventListener('DOMContentLoaded', () => {
         console.warn('DriveBox initialized with limited functionality:', apiCheck.message);
         app.showToast('Một số tính năng có thể không khả dụng', 'warning');
     } else {
-        console.log('DriveBox initialized successfully with full functionality');
+
     }
 });

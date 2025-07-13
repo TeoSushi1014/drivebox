@@ -52,8 +52,6 @@ class UpdateManager {  constructor() {
   }
   // Initialize update manager
   async initialize() {
-    console.log('Initializing Update Manager...');
-    
     // Check if this is an update startup
     const isUpdateMode = process.argv.includes('--update-mode');
     if (isUpdateMode) {
@@ -72,8 +70,6 @@ class UpdateManager {  constructor() {
     
     // Ensure custom download directory exists
     this.ensureDownloadDirectory();
-    
-    console.log('Update Manager initialized successfully');
   }
   // Clean up old update files and backups
   cleanupOldUpdates() {
@@ -90,7 +86,6 @@ class UpdateManager {  constructor() {
             // Remove files older than 24 hours
             if (age > 24 * 60 * 60 * 1000) {
               fs.unlinkSync(filePath);
-              console.log('Cleaned up old update file:', file);
             }
           } catch (error) {
             console.warn('Could not clean up file:', file, error.message);
@@ -111,7 +106,6 @@ class UpdateManager {  constructor() {
             // Remove files older than 24 hours
             if (age > 24 * 60 * 60 * 1000) {
               fs.unlinkSync(filePath);
-              console.log('Cleaned up old temp update file:', file);
             }
           } catch (error) {
             console.warn('Could not clean up temp file:', file, error.message);
@@ -136,7 +130,6 @@ class UpdateManager {  constructor() {
               try {
                 const filePath = path.join(currentDir, file);
                 fs.unlinkSync(filePath);
-                console.log('Cleaned up old backup:', file);
               } catch (error) {
                 console.warn('Could not clean up backup:', file, error.message);
               }
@@ -153,15 +146,11 @@ class UpdateManager {  constructor() {
   async checkPendingUpdates() {
     const pendingUpdate = this.store.get('pendingUpdate');
     if (pendingUpdate) {
-      console.log('Found pending update:', pendingUpdate);
       if (fs.existsSync(pendingUpdate.filePath)) {
         const validation = await this.validateUpdateFile(pendingUpdate.filePath);
-        console.log('Validation result for pending update:', validation); // Log validation result
         if (validation.valid) {
-          console.log('Pending update is valid and ready for installation');
           return pendingUpdate;
         } else {
-          console.log('Pending update file is invalid, cleaning up...');
           try {
             fs.unlinkSync(pendingUpdate.filePath);
           } catch (error) {
@@ -205,9 +194,7 @@ class UpdateManager {  constructor() {
       if (pendingUpdate && pendingUpdate.filePath && fs.existsSync(pendingUpdate.filePath)) {
         const validation = await this.validateUpdateFile(pendingUpdate.filePath);
         if (validation.valid) {
-          if (!silent) {
-            console.log('Pending update exists, skip check.');
-          }
+          
           return {
             hasUpdate: false,
             currentVersion,
@@ -219,23 +206,18 @@ class UpdateManager {  constructor() {
 
       // Rate limiting - don't check too frequently
       if (now - this.lastCheckTime < 5 * 60 * 1000) { // 5 minutes minimum
-        console.log('Update check rate limited');
         return this.store.get('lastUpdateInfo', { hasUpdate: false, currentVersion });
       }
 
       this.lastCheckTime = now;
 
-      if (!silent) {
-        console.log('Checking for updates, current version:', currentVersion);
-      }
+
 
       let lastError = null;
 
       for (const source of this.updateSources) {
         try {
-          if (!silent) {
-            console.log(`Checking update source: ${source.name}`);
-          }
+
 
           const updateInfo = await this.checkUpdateSource(source, currentVersion);
 
@@ -244,15 +226,12 @@ class UpdateManager {  constructor() {
             this.store.set('lastUpdateInfo', updateInfo);
             this.store.set('lastUpdateCheck', now);
 
-            if (!silent) {
-              console.log('Update check successful:', updateInfo);
-            }
+
 
             return updateInfo;
           }
 
         } catch (error) {
-          console.warn(`Update source ${source.name} failed:`, error.message);
           lastError = error.message;
           continue;
         }
@@ -270,7 +249,6 @@ class UpdateManager {  constructor() {
       return errorResult;
 
     } catch (error) {
-      console.error('Update check failed:', error);
       return {
         hasUpdate: false,
         currentVersion: app?.getVersion ? app.getVersion() : '1.2.5',
@@ -358,32 +336,26 @@ class UpdateManager {  constructor() {
   async validateUpdateFile(filePath) {
     try {
       if (!fs.existsSync(filePath)) {
-        console.warn('[validateUpdateFile] File does not exist:', filePath);
         return { valid: false, error: 'Update file not found' };
       }
       const stats = fs.statSync(filePath);
       if (stats.size < 5 * 1024 * 1024) {
-        console.warn('[validateUpdateFile] File too small:', stats.size);
         return { valid: false, error: 'File too small (< 5MB)' };
       }
       if (stats.size > 500 * 1024 * 1024) {
-        console.warn('[validateUpdateFile] File too large:', stats.size);
         return { valid: false, error: 'File too large (> 500MB)' };
       }
       // PE header validation
       const buffer = fs.readFileSync(filePath, { start: 0, end: 64 });
       if (buffer[0] !== 0x4D || buffer[1] !== 0x5A) {
-        console.warn('[validateUpdateFile] Invalid PE header:', buffer[0], buffer[1]);
         return { valid: false, error: 'Invalid PE header' };
       }
       const peOffset = buffer.readUInt32LE(60);
       if (peOffset < 64 || peOffset > stats.size - 4) {
-        console.warn('[validateUpdateFile] Invalid PE offset:', peOffset);
         return { valid: false, error: 'Invalid PE offset' };
       }
       return { valid: true };
     } catch (error) {
-      console.warn('[validateUpdateFile] Exception:', error.message);
       return { valid: false, error: error.message };
     }
   }
