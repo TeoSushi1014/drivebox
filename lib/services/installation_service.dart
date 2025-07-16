@@ -17,6 +17,7 @@ enum InstallationStatus {
   completed,
   failed,
   cancelled,
+  resuming,
 }
 
 class InstallationProgress {
@@ -25,6 +26,8 @@ class InstallationProgress {
   final String currentFile;
   final String message;
   final String? error;
+  final int? downloadedBytes;
+  final int? totalBytes;
 
   InstallationProgress({
     required this.status,
@@ -32,6 +35,8 @@ class InstallationProgress {
     required this.currentFile,
     required this.message,
     this.error,
+    this.downloadedBytes,
+    this.totalBytes,
   });
 }
 
@@ -44,6 +49,24 @@ class InstallationService {
   Future<String> getInstallationPath(String appDirName) async {
     final documentsDir = await getApplicationDocumentsDirectory();
     return path.join(documentsDir.path, appDirName);
+  }
+
+  // Check if a module has a partial download
+  Future<bool> hasModulePartialDownload(ModuleModel module) async {
+    final fileName = '${module.id}.zip';
+    return await _fileService.hasPartialDownload(fileName);
+  }
+
+  // Get partial download size for a module
+  Future<int> getModulePartialDownloadSize(ModuleModel module) async {
+    final fileName = '${module.id}.zip';
+    return await _fileService.getPartialDownloadSize(fileName);
+  }
+
+  // Clear partial download for a module
+  Future<void> clearModulePartialDownload(ModuleModel module) async {
+    final fileName = '${module.id}.zip';
+    await _fileService.clearPartialDownload(fileName);
   }
 
   // Install an application
@@ -165,15 +188,32 @@ class InstallationService {
           ),
         );
       } else {
-        // Download dependency installer
-        onProgressUpdate(
-          InstallationProgress(
-            status: InstallationStatus.downloading,
-            progress: processedDependencies / totalDependencies,
-            currentFile: module.name,
-            message: 'Downloading ${module.name}...',
-          ),
-        );
+        // Check if there's a partial download
+        final hasPartialDownload = await hasModulePartialDownload(module);
+        final partialSize = hasPartialDownload
+            ? await getModulePartialDownloadSize(module)
+            : 0;
+
+        if (hasPartialDownload && partialSize > 0) {
+          onProgressUpdate(
+            InstallationProgress(
+              status: InstallationStatus.resuming,
+              progress: processedDependencies / totalDependencies,
+              currentFile: module.name,
+              message: 'Resuming download of ${module.name}...',
+              downloadedBytes: partialSize,
+            ),
+          );
+        } else {
+          onProgressUpdate(
+            InstallationProgress(
+              status: InstallationStatus.downloading,
+              progress: processedDependencies / totalDependencies,
+              currentFile: module.name,
+              message: 'Downloading ${module.name}...',
+            ),
+          );
+        }
 
         final fileName = '${module.id}.zip';
         final downloadedFile = await _fileService.downloadFile(
@@ -263,15 +303,32 @@ class InstallationService {
     var processedModules = 0;
 
     for (final module in appFiles) {
-      // Update progress
-      onProgressUpdate(
-        InstallationProgress(
-          status: InstallationStatus.downloading,
-          progress: processedModules / totalModules,
-          currentFile: module.name,
-          message: 'Downloading ${module.name}...',
-        ),
-      );
+      // Check if there's a partial download
+      final hasPartialDownload = await hasModulePartialDownload(module);
+      final partialSize = hasPartialDownload
+          ? await getModulePartialDownloadSize(module)
+          : 0;
+
+      if (hasPartialDownload && partialSize > 0) {
+        onProgressUpdate(
+          InstallationProgress(
+            status: InstallationStatus.resuming,
+            progress: processedModules / totalModules,
+            currentFile: module.name,
+            message: 'Resuming download of ${module.name}...',
+            downloadedBytes: partialSize,
+          ),
+        );
+      } else {
+        onProgressUpdate(
+          InstallationProgress(
+            status: InstallationStatus.downloading,
+            progress: processedModules / totalModules,
+            currentFile: module.name,
+            message: 'Downloading ${module.name}...',
+          ),
+        );
+      }
 
       final fileName = '${module.id}.zip';
       final downloadedFile = await _fileService.downloadFile(

@@ -22,10 +22,18 @@ class ApplicationModel {
   factory ApplicationModel.fromJson(Map<String, dynamic> json) {
     // Parse the totalSize which could be in GB or MB
     double totalSize = 0;
+
     if (json.containsKey('totalSize_gb')) {
-      totalSize = json['totalSize_gb'].toDouble();
+      // Convert to double in case it's an int in the JSON
+      totalSize = double.parse(json['totalSize_gb'].toString());
     } else if (json.containsKey('totalSize_mb')) {
-      totalSize = json['totalSize_mb'].toDouble() / 1024; // Convert MB to GB
+      // Convert MB to GB
+      totalSize = double.parse(json['totalSize_mb'].toString()) / 1024;
+    } else {
+      // Calculate total size from modules if not specified
+      var modules = json['modules'] as List;
+      // For now we'll just use a default size as module sizes are not in the JSON
+      totalSize = modules.length * 0.5; // Estimate 500MB per module
     }
 
     return ApplicationModel(
@@ -42,12 +50,16 @@ class ApplicationModel {
   }
 
   Map<String, dynamic> toJson() {
+    // Determine whether to use totalSize_gb or totalSize_mb based on size
+    final sizeKey = totalSizeGB >= 1 ? 'totalSize_gb' : 'totalSize_mb';
+    final sizeValue = totalSizeGB >= 1 ? totalSizeGB : totalSizeGB * 1024;
+
     return {
       'id': id,
       'name': name,
       'description': description,
       'version': version,
-      'totalSize_gb': totalSizeGB,
+      sizeKey: sizeValue,
       'installDir': installDir,
       'modules': modules.map((module) => module.toJson()).toList(),
     };

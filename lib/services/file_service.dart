@@ -27,31 +27,70 @@ class FileService {
   }) async {
     final tempDir = await getTempDir();
     final file = File('${tempDir.path}/$fileName');
+    final tempFile = File('${tempDir.path}/$fileName.part');
+
+    // Get existing file size for resuming
+    int startByte = 0;
+    if (tempFile.existsSync()) {
+      startByte = await tempFile.length();
+    }
 
     final httpClient = http.Client();
     final request = http.Request('GET', Uri.parse(url));
+
+    // Add Range header for resuming download
+    if (startByte > 0) {
+      request.headers['Range'] = 'bytes=$startByte-';
+    }
+
     final response = await httpClient.send(request);
 
-    if (response.statusCode != 200) {
+    // Check if the server supports resume
+    final isResumable = response.statusCode == 206; // Partial content
+    final isOK = response.statusCode == 200; // Full content
+
+    if (!isResumable && !isOK) {
       throw Exception('Failed to download file: ${response.statusCode}');
     }
 
-    final totalBytes = response.contentLength ?? 0;
-    var receivedBytes = 0;
-
-    List<int> bytes = [];
-
-    await for (final chunk in response.stream) {
-      bytes.addAll(chunk);
-      receivedBytes += chunk.length;
-
-      if (onProgress != null && totalBytes > 0) {
-        final progress = receivedBytes / totalBytes;
-        onProgress(progress);
+    // If server doesn't support resume or we're starting from 0, reset the file
+    if (!isResumable) {
+      startByte = 0;
+      if (tempFile.existsSync()) {
+        await tempFile.delete();
       }
     }
 
-    await file.writeAsBytes(bytes);
+    final totalBytes =
+        (isResumable ? startByte : 0) + (response.contentLength ?? 0);
+    var receivedBytes = startByte;
+
+    // Open file in append mode if resuming, otherwise write mode
+    final IOSink fileSink = tempFile.openWrite(
+      mode: startByte > 0 ? FileMode.append : FileMode.write,
+    );
+
+    try {
+      // Stream the data to the file
+      await for (final chunk in response.stream) {
+        fileSink.add(chunk);
+        receivedBytes += chunk.length;
+
+        if (onProgress != null && totalBytes > 0) {
+          final progress = receivedBytes / totalBytes;
+          onProgress(progress);
+        }
+      }
+    } finally {
+      await fileSink.flush();
+      await fileSink.close();
+    }
+
+    // Rename the temp file to the final file name after successful download
+    if (tempFile.existsSync()) {
+      await tempFile.rename(file.path);
+    }
+
     return file;
   }
 
@@ -62,6 +101,32 @@ class FileService {
     final checksum = digest.toString();
 
     return checksum == expectedChecksum;
+  }
+
+  // Check if a partial download exists
+  Future<bool> hasPartialDownload(String fileName) async {
+    final tempDir = await getTempDir();
+    final partFile = File('${tempDir.path}/$fileName.part');
+    return partFile.existsSync();
+  }
+
+  // Get the size of a partial download
+  Future<int> getPartialDownloadSize(String fileName) async {
+    final tempDir = await getTempDir();
+    final partFile = File('${tempDir.path}/$fileName.part');
+    if (!partFile.existsSync()) {
+      return 0;
+    }
+    return await partFile.length();
+  }
+
+  // Delete a partial download
+  Future<void> clearPartialDownload(String fileName) async {
+    final tempDir = await getTempDir();
+    final partFile = File('${tempDir.path}/$fileName.part');
+    if (partFile.existsSync()) {
+      await partFile.delete();
+    }
   }
 
   // Extract a ZIP file to the specified directory

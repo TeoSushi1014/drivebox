@@ -1,0 +1,94 @@
+{
+  "applications": [
+    {
+      "id": "mo_phong_simulator",
+      "name": "Driving Simulation Software",
+      "description": "Software for simulating 120 traffic scenarios based on the latest standards.",
+      "version": "1.0.0",
+      "totalSize_gb": 5.5,
+      "installDir": "OnTapMoPhong",
+      "modules": [
+        {
+          "id": "dependency_vc_redist",
+          "name": "Microsoft VC++ Redistributable (x64)",
+          "type": "dependency_installer",
+          "url": "https://github.com/TeoSushi1014/drivebox-assets/releases/download/vc-redist-2017/dependency_vc_redist_2017_x64.zip",
+          "checksum_sha256": "f191f1f0c26059f765431a3226577820946cb49dee8f77fb0d762fbab2258dd8"
+        },
+        {
+          "id": "dependency_klite",
+          "name": "K-Lite Codec Pack (Full)",
+          "type": "dependency_installer",
+          "url": "https://github.com/TeoSushi1014/drivebox-assets/releases/download/klite_full-v1905/dependency_klite_codec_1905_full.zip",
+          "checksum_sha256": "cd23c05547b8c73bf612dba6ac539e41eb79bed9330599e8b3bb1ccc95cdd6f4"
+        },
+        {
+          "id": "app_core",
+          "name": "Core Application & UI",
+          "type": "app_files",
+          "url": "https://github.com/TeoSushi1014/drivebox-assets/releases/download/core-v1.0/app_ontapmophong_core_v1.0.zip",
+          "checksum_sha256": "18877e17aba728a857eaea721a56ca7747d966226d23e4c161d23bed69f17ab8"
+        },
+        {
+          "id": "videos_pack_1",
+          "name": "Simulation Data (Part 1/6)",
+          "type": "app_files",
+          "url": "https://github.com/TeoSushi1014/drivebox-assets/releases/download/videos_pack_chapter1/videos_pack_chapter1.zip",
+          "checksum_sha256": "7c47a4ee25713265209e3f675266415c13894eb42fb826ec5385df8829d47709"
+        },
+        {
+          "id": "videos_pack_2",
+          "name": "Simulation Data (Part 2/6)",
+          "type": "app_files",
+          "url": "https://github.com/TeoSushi1014/drivebox-assets/releases/download/videos_pack_chapter2/videos_pack_chapter2.zip",
+          "checksum_sha256": "95e3300af18ea8cc84da3df5e8b15151296ae15e78ca3867efb31c4fed65be57"
+        },
+        {
+          "id": "videos_pack_3",
+          "name": "Simulation Data (Part 3/6)",
+          "type": "app_files",
+          "url": "https://github.com/TeoSushi1014/drivebox-assets/releases/download/videos_pack_chapter3/videos_pack_chapter3.zip",
+          "checksum_sha256": "f670efa8e91309e06172624da598e00f750a2fee638cb85273d68cc792d81ceb"
+        },
+        {
+          "id": "videos_pack_4",
+          "name": "Simulation Data (Part 4/6)",
+          "type": "app_files",
+          "url": "https://github.com/TeoSushi1014/drivebox-assets/releases/download/videos_pack_chapter4/videos_pack_chapter4.zip",
+          "checksum_sha256": "db649a129ba0d8c9e275bfb1c557746d631998f1686eabc8ee2d4433381362de"
+        },
+        {
+          "id": "videos_pack_5",
+          "name": "Simulation Data (Part 5/6)",
+          "type": "app_files",
+          "url": "https://github.com/TeoSushi1014/drivebox-assets/releases/download/videos_pack_chapter5/videos_pack_chapter5.zip",
+          "checksum_sha256": "6985b412491630cf22875c022df8daa6cf224d9ee7e042ea0cc09fbc8e71f363"
+        },
+        {
+          "id": "videos_pack_6",
+          "name": "Simulation Data (Part 6/6)",
+          "type": "app_files",
+          "url": "https://github.com/TeoSushi1014/drivebox-assets/releases/download/videos_pack_chapter6/videos_pack_chapter6.zip",
+          "checksum_sha256": "302914e0c4aec012887a60bfbeeaa30a3ce6baceeb61bd0830ee9224eea3fa33"
+        }
+      ]
+    },
+    {
+      "id": "tu_luyen_600_cau",
+      "name": "600 Questions Test Prep Software",
+      "description": "Test preparation software for the 600 theoretical questions for license categories B1, B2, C, D, E, F.",
+      "version": "1.0.0",
+      "totalSize_mb": 250,
+      "installDir": "TuLuyen600Cau",
+      "modules": [
+        {
+          "id": "app_600cau_bca",
+          "name": "Installer Package",
+          "type": "app_files",
+          "url": "https://github.com/TeoSushi1014/drivebox-assets/releases/download/PhamMemTuLuyen_600Cau_BCA/PhamMemTuLuyen_600Cau_BCA.zip",
+          "checksum_sha256": "e7e9d54747b89da831702726c64ce4c664c6010c17540b32bf0b28414410cf26"
+        }
+      ]
+    }
+  ]
+} 

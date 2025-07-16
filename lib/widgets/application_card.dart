@@ -20,6 +20,9 @@ class ApplicationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Convert to bytes for the filesize function
+    final sizeInBytes = (application.totalSizeGB * 1024 * 1024 * 1024).round();
+
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
       elevation: 2,
@@ -69,9 +72,8 @@ class ApplicationCard extends StatelessWidget {
                 const SizedBox(width: 16),
                 const Icon(Icons.storage, size: 16),
                 const SizedBox(width: 8),
-                Text(
-                  'Size: ${filesize(application.totalSizeGB * 1024 * 1024 * 1024)}',
-                ),
+                // Display the size using the filesize package for human-readable format
+                Text('Size: ${filesize(sizeInBytes)}'),
               ],
             ),
             const SizedBox(height: 16),

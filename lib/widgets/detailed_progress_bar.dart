@@ -1,15 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:filesize/filesize.dart';
 
 class DetailedProgressBar extends StatelessWidget {
   final double progress;
   final String status;
   final String currentFile;
+  final int? downloadedBytes;
+  final int? totalBytes;
 
   const DetailedProgressBar({
     Key? key,
     required this.progress,
     required this.status,
     required this.currentFile,
+    this.downloadedBytes,
+    this.totalBytes,
   }) : super(key: key);
 
   @override
@@ -42,6 +47,26 @@ class DetailedProgressBar extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
           style: TextStyle(color: Colors.grey.shade700, fontSize: 12),
         ),
+        if (downloadedBytes != null && status.toLowerCase() == 'resuming')
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text(
+              'Resuming from ${filesize(downloadedBytes)}',
+              style: TextStyle(
+                color: Colors.blue.shade700,
+                fontSize: 12,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ),
+        if (downloadedBytes != null && totalBytes != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text(
+              '${filesize(downloadedBytes)} of ${filesize(totalBytes)}',
+              style: TextStyle(color: Colors.grey.shade700, fontSize: 12),
+            ),
+          ),
       ],
     );
   }
@@ -50,6 +75,8 @@ class DetailedProgressBar extends StatelessWidget {
     switch (status.toLowerCase()) {
       case 'downloading':
         return Colors.blue;
+      case 'resuming':
+        return Colors.lightBlue;
       case 'validating':
         return Colors.amber;
       case 'installing':

@@ -1,78 +1,74 @@
 # DriveBox
 
-DriveBox is a Flutter Desktop application for downloading and installing driving simulation software. It manages the installation of dependencies and application files, ensuring a smooth user experience.
-
-## Prerequisites
-
-- [Flutter SDK](https://docs.flutter.dev/get-started/install) (latest stable version)
-- [Visual Studio](https://visualstudio.microsoft.com/downloads/) with Desktop Development with C++ workload (required for Windows development)
-- Windows Developer Mode enabled
-
-## Enable Windows Developer Mode
-
-DriveBox requires symlink support, which needs Windows Developer Mode to be enabled:
-
-1. Press `Windows + I` to open Settings
-2. Navigate to `Privacy & Security > For developers`
-3. Toggle on `Developer Mode`
-4. Restart your computer
-
-Alternatively, run this command to open the developer settings directly:
-```
-start ms-settings:developers
-```
-
-## Setup
-
-1. Clone this repository:
-```
-git clone https://github.com/TeoSushi1014/drivebox.git
-```
-
-2. Navigate to the project directory:
-```
-cd drivebox
-```
-
-3. Install dependencies:
-```
-flutter pub get
-```
-
-## Running the Application
-
-To run the application in development mode:
-```
-flutter run -d windows
-```
-
-## Building for Production
-
-To build a release version of the application:
-```
-flutter build windows
-```
-
-The built application will be located in `build/windows/runner/Release/`.
-
-## Project Structure
-
-- `lib/models/` - Data models
-- `lib/services/` - Core services (manifest, file, process, platform)
-- `lib/screens/` - UI screens
-- `lib/widgets/` - Reusable UI components
-- `lib/blocs/` - State management using BLoC pattern
+A Flutter Desktop application designed to download and install driving simulation software, with a focus on handling large file downloads efficiently.
 
 ## Features
 
-- Download and install driving simulation software
-- Verify checksums for data integrity
-- Automatically install required dependencies
-- Track installation progress with detailed UI
-- Launch installed applications
+- **Modular Architecture**: Handles multi-part application downloads in a structured way
+- **Resume Downloads**: Automatically resumes interrupted downloads where they left off
+- **Dependency Management**: Intelligently handles system dependencies
+- **Checksum Validation**: Ensures file integrity through SHA256 checksum verification
+- **Cross-Platform**: Built with Flutter for Windows, with potential for Mac and Linux support
 
-## Developer Information
+## Development
 
-- **Developer:** Hoang Viet Quang (TeoSushi)
-- **GitHub (Project):** https://github.com/TeoSushi1014/drivebox
-- **Assets Repository:** https://github.com/TeoSushi1014/drivebox-assets
+### Prerequisites
+
+- Flutter SDK 3.19.0 or higher
+- Windows 10 or 11 with Visual Studio installed (for Windows builds)
+
+### Setup
+
+1. Clone the repository:
+```bash
+git clone https://github.com/TeoSushi1014/drivebox.git
+```
+
+2. Install dependencies:
+```bash
+flutter pub get
+```
+
+3. Run the application:
+```bash
+flutter run -d windows
+```
+
+### Building for Production
+
+To build the application for production:
+
+```bash
+flutter build windows --release
+```
+
+## Security Notes
+
+This application downloads and installs executable files. Users may need to:
+
+1. Temporarily disable antivirus or Windows Defender
+2. Allow the application through the firewall
+3. Accept security warnings during installation
+
+## Project Structure
+
+```
+lib/
+├── blocs/           # State management
+├── models/          # Data models
+├── screens/         # UI screens
+├── services/        # Core services
+│   ├── file_service.dart        # File downloading and handling
+│   ├── installation_service.dart # Installation orchestration
+│   ├── manifest_service.dart    # Manifest parsing
+│   ├── platform_service.dart    # OS-specific operations
+│   └── process_service.dart     # External process execution
+└── widgets/         # Reusable UI components
+```
+
+## Contact
+
+- Developer: Hoang Viet Quang (TeoSushi)
+- Facebook: https://www.facebook.com/boboiboy.gala.7/
+- GitHub: https://github.com/TeoSushi1014/drivebox
+- Zalo (Support): 0838696697 

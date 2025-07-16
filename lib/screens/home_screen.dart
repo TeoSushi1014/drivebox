@@ -174,6 +174,8 @@ class HomeScreen extends StatelessWidget {
                               .split('.')
                               .last,
                           currentFile: state.progress.currentFile,
+                          downloadedBytes: state.progress.downloadedBytes,
+                          totalBytes: state.progress.totalBytes,
                         ),
                         const SizedBox(height: 48),
                         if (state.progress.error != null)
