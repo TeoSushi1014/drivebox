@@ -1,0 +1,11 @@
+---
+alwaysApply: true
+---
+
+# Core Principles for High-Quality Code
+
+The primary goal is to produce clean, efficient, and maintainable code.
+
+1.  **Plan First:** Always start by outlining a clear, step-by-step plan before writing any code. This ensures we agree on the approach.
+2.  **Self-Documenting Code:** Prioritize writing code that is so clear it requires no comments. If logic is inherently complex, add concise comments to explain the **"why,"** not the "what."
+3.  **Production-Ready Code:** The final output must be production-grade. This means it is clean, efficient, and contains no debugging statements like `console.log`. If you need help with debugging, ask for it specifically.
