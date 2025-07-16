@@ -20,8 +20,14 @@ class ApplicationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Convert to bytes for the filesize function
-    final sizeInBytes = (application.totalSizeGB * 1024 * 1024 * 1024).round();
+    // Calculate size in bytes for potential other uses
+    final sizeInBytes = application.sizeUnit == 'GB'
+        ? (application.sizeValue * 1024 * 1024 * 1024).toInt()
+        : (application.sizeValue * 1024 * 1024).toInt();
+
+    // Display size with the correct unit directly from the model
+    final sizeDisplay =
+        '${application.sizeValue.toStringAsFixed(application.sizeUnit == 'GB' ? 1 : 0)} ${application.sizeUnit}';
 
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
@@ -72,8 +78,8 @@ class ApplicationCard extends StatelessWidget {
                 const SizedBox(width: 16),
                 const Icon(Icons.storage, size: 16),
                 const SizedBox(width: 8),
-                // Display the size using the filesize package for human-readable format
-                Text('Size: ${filesize(sizeInBytes)}'),
+                // Display the size with the proper unit
+                Text('Size: $sizeDisplay'),
               ],
             ),
             const SizedBox(height: 16),

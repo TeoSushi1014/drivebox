@@ -6,6 +6,7 @@ import '../models/module_model.dart';
 import 'file_service.dart';
 import 'process_service.dart';
 import 'platform_service.dart';
+import 'stream_extraction_service.dart';
 
 enum InstallationStatus {
   notStarted,
@@ -44,6 +45,8 @@ class InstallationService {
   final FileService _fileService = FileService();
   final ProcessService _processService = ProcessService();
   final PlatformService _platformService = PlatformService();
+  final StreamExtractionService _streamExtractionService =
+      StreamExtractionService();
 
   // Get the installation directory path
   Future<String> getInstallationPath(String appDirName) async {
@@ -331,52 +334,78 @@ class InstallationService {
       }
 
       final fileName = '${module.id}.zip';
-      final downloadedFile = await _fileService.downloadFile(
-        url: module.url,
-        fileName: fileName,
-        onProgress: (progress) {
-          onProgressUpdate(
-            InstallationProgress(
-              status: InstallationStatus.downloading,
-              progress: (processedModules + progress * 0.6) / totalModules,
-              currentFile: module.name,
-              message:
-                  'Downloading ${module.name}: ${(progress * 100).toStringAsFixed(1)}%',
-            ),
+
+      // Determine if this module is suitable for stream extraction
+      // Large app_files modules (>1GB) are good candidates for stream extraction
+      // We don't know exact file size without querying, but we can make an educated guess
+      // based on the module type and name (video packs are usually large)
+      final useStreamExtraction =
+          module.type == ModuleType.appFiles &&
+          (module.name.contains('Video') ||
+              module.name.contains('Simulation Data'));
+
+      if (useStreamExtraction) {
+        // Use stream extraction to save disk space
+        onProgressUpdate(
+          InstallationProgress(
+            status: InstallationStatus.downloading,
+            progress: processedModules / totalModules,
+            currentFile: module.name,
+            message: 'Streaming ${module.name}...',
+          ),
+        );
+
+        try {
+          await _streamExtractionService.extractZipFromUrl(
+            url: module.url,
+            outputDir: installationPath,
+            onProgress: (progress) {
+              onProgressUpdate(
+                InstallationProgress(
+                  status: InstallationStatus.downloading,
+                  progress: (processedModules + progress * 0.9) / totalModules,
+                  currentFile: module.name,
+                  message:
+                      'Streaming ${module.name}: ${(progress * 100).toStringAsFixed(1)}%',
+                ),
+              );
+            },
+            onFileExtracted: (fileName) {
+              onProgressUpdate(
+                InstallationProgress(
+                  status: InstallationStatus.extracting,
+                  progress: (processedModules + 0.9) / totalModules,
+                  currentFile: fileName,
+                  message: 'Extracting: $fileName',
+                ),
+              );
+            },
           );
-        },
-      );
-
-      // Validate checksum
-      onProgressUpdate(
-        InstallationProgress(
-          status: InstallationStatus.validating,
-          progress: (processedModules + 0.6) / totalModules,
-          currentFile: module.name,
-          message: 'Validating ${module.name}...',
-        ),
-      );
-
-      final isValid = await _fileService.validateChecksum(
-        downloadedFile,
-        module.checksumSha256,
-      );
-
-      if (!isValid) {
-        throw Exception('Checksum validation failed for ${module.name}');
+        } catch (e) {
+          // Fall back to traditional method if streaming fails
+          print(
+            'Stream extraction failed: $e. Falling back to traditional method.',
+          );
+          await _traditionalDownloadAndExtract(
+            module,
+            fileName,
+            installationPath,
+            onProgressUpdate,
+            processedModules,
+            totalModules,
+          );
+        }
+      } else {
+        // Use traditional download and extract for smaller files
+        await _traditionalDownloadAndExtract(
+          module,
+          fileName,
+          installationPath,
+          onProgressUpdate,
+          processedModules,
+          totalModules,
+        );
       }
-
-      // Extract files
-      onProgressUpdate(
-        InstallationProgress(
-          status: InstallationStatus.extracting,
-          progress: (processedModules + 0.7) / totalModules,
-          currentFile: module.name,
-          message: 'Extracting ${module.name}...',
-        ),
-      );
-
-      await _fileService.extractZip(downloadedFile, installationPath);
 
       processedModules++;
     }
@@ -431,5 +460,63 @@ class InstallationService {
     // Check if the directory has contents
     final contents = await installDir.list().toList();
     return contents.isNotEmpty;
+  }
+
+  // Traditional download and extract method
+  Future<void> _traditionalDownloadAndExtract(
+    ModuleModel module,
+    String fileName,
+    String installationPath,
+    void Function(InstallationProgress) onProgressUpdate,
+    int processedModules,
+    int totalModules,
+  ) async {
+    // Download the file
+    final downloadedFile = await _fileService.downloadFile(
+      url: module.url,
+      fileName: fileName,
+      onProgress: (progress) {
+        onProgressUpdate(
+          InstallationProgress(
+            status: InstallationStatus.downloading,
+            progress: (processedModules + progress * 0.6) / totalModules,
+            currentFile: module.name,
+            message:
+                'Downloading ${module.name}: ${(progress * 100).toStringAsFixed(1)}%',
+          ),
+        );
+      },
+    );
+
+    // Validate checksum
+    onProgressUpdate(
+      InstallationProgress(
+        status: InstallationStatus.validating,
+        progress: (processedModules + 0.6) / totalModules,
+        currentFile: module.name,
+        message: 'Validating ${module.name}...',
+      ),
+    );
+
+    final isValid = await _fileService.validateChecksum(
+      downloadedFile,
+      module.checksumSha256,
+    );
+
+    if (!isValid) {
+      throw Exception('Checksum validation failed for ${module.name}');
+    }
+
+    // Extract files
+    onProgressUpdate(
+      InstallationProgress(
+        status: InstallationStatus.extracting,
+        progress: (processedModules + 0.7) / totalModules,
+        currentFile: module.name,
+        message: 'Extracting ${module.name}...',
+      ),
+    );
+
+    await _fileService.extractZip(downloadedFile, installationPath);
   }
 }

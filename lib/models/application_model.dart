@@ -5,7 +5,8 @@ class ApplicationModel {
   final String name;
   final String description;
   final String version;
-  final double totalSizeGB;
+  double sizeValue; // Removed final to allow updating from GitHub
+  String sizeUnit; // Removed final to allow updating from GitHub
   final String installDir;
   final List<ModuleModel> modules;
 
@@ -14,26 +15,34 @@ class ApplicationModel {
     required this.name,
     required this.description,
     required this.version,
-    required this.totalSizeGB,
+    required this.sizeValue,
+    required this.sizeUnit,
     required this.installDir,
     required this.modules,
   });
 
+  // Getter for backward compatibility
+  double get totalSizeGB => sizeUnit == 'GB' ? sizeValue : sizeValue / 1024;
+
   factory ApplicationModel.fromJson(Map<String, dynamic> json) {
     // Parse the totalSize which could be in GB or MB
-    double totalSize = 0;
+    double sizeValue = 0;
+    String sizeUnit = 'GB'; // Default unit
 
     if (json.containsKey('totalSize_gb')) {
-      // Convert to double in case it's an int in the JSON
-      totalSize = double.parse(json['totalSize_gb'].toString());
+      // Keep as GB
+      sizeValue = double.parse(json['totalSize_gb'].toString());
+      sizeUnit = 'GB';
     } else if (json.containsKey('totalSize_mb')) {
-      // Convert MB to GB
-      totalSize = double.parse(json['totalSize_mb'].toString()) / 1024;
+      // Keep as MB
+      sizeValue = double.parse(json['totalSize_mb'].toString());
+      sizeUnit = 'MB';
     } else {
       // Calculate total size from modules if not specified
       var modules = json['modules'] as List;
       // For now we'll just use a default size as module sizes are not in the JSON
-      totalSize = modules.length * 0.5; // Estimate 500MB per module
+      sizeValue = modules.length * 500; // Estimate 500MB per module
+      sizeUnit = 'MB';
     }
 
     return ApplicationModel(
@@ -41,7 +50,8 @@ class ApplicationModel {
       name: json['name'] as String,
       description: json['description'] as String,
       version: json['version'] as String,
-      totalSizeGB: totalSize,
+      sizeValue: sizeValue,
+      sizeUnit: sizeUnit,
       installDir: json['installDir'] as String,
       modules: (json['modules'] as List)
           .map((moduleJson) => ModuleModel.fromJson(moduleJson))
@@ -50,9 +60,8 @@ class ApplicationModel {
   }
 
   Map<String, dynamic> toJson() {
-    // Determine whether to use totalSize_gb or totalSize_mb based on size
-    final sizeKey = totalSizeGB >= 1 ? 'totalSize_gb' : 'totalSize_mb';
-    final sizeValue = totalSizeGB >= 1 ? totalSizeGB : totalSizeGB * 1024;
+    // Use the correct size key based on the stored unit
+    final sizeKey = sizeUnit == 'GB' ? 'totalSize_gb' : 'totalSize_mb';
 
     return {
       'id': id,

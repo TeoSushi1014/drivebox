@@ -64,6 +64,12 @@ dependencies:
   
   # For displaying beautiful dialogs
   flutter_animated_dialog: ^2.0.1
+  
+  # For app version information
+  package_info_plus: ^4.2.0
+  
+  # For version parsing and comparison
+  version: ^3.0.2
 
 dev_dependencies:
   flutter_test:

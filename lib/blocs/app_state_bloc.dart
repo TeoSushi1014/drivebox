@@ -8,6 +8,12 @@ abstract class AppEvent {}
 
 class LoadApplicationsEvent extends AppEvent {}
 
+class UpdateAppSizesEvent extends AppEvent {
+  final List<ApplicationModel> updatedApps;
+
+  UpdateAppSizesEvent(this.updatedApps);
+}
+
 class InstallApplicationEvent extends AppEvent {
   final ApplicationModel application;
 
@@ -88,6 +94,7 @@ class AppBloc extends Bloc<AppEvent, AppState> {
 
   AppBloc() : super(InitialAppState()) {
     on<LoadApplicationsEvent>(_onLoadApplications);
+    on<UpdateAppSizesEvent>(_onUpdateAppSizes);
     on<InstallApplicationEvent>(_onInstallApplication);
     on<LaunchApplicationEvent>(_onLaunchApplication);
     on<UninstallApplicationEvent>(_onUninstallApplication);
@@ -116,6 +123,15 @@ class AppBloc extends Bloc<AppEvent, AppState> {
     } catch (e) {
       emit(AppsLoadErrorState(e.toString()));
     }
+  }
+
+  // Update apps with size information from GitHub
+  void _onUpdateAppSizes(UpdateAppSizesEvent event, Emitter<AppState> emit) {
+    // Update the application list with new sizes
+    _applications = event.updatedApps;
+
+    // Re-emit the state to update the UI
+    emit(AppsLoadedState(_applications, _installedStatus));
   }
 
   Future<void> _onInstallApplication(

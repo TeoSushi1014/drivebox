@@ -1,0 +1,6 @@
+{
+  "version": "1.1.0",
+  "download_url": "https://github.com/TeoSushi1014/drivebox/releases/download/v1.1.0/drivebox_setup_v1.1.0.exe",
+  "release_notes": "# What's New in v1.1.0\n\n- Added automatic update feature\n- Improved download performance\n- Fixed issue with large file extractions\n- Enhanced UI responsiveness",
+  "is_required": false
+} 
