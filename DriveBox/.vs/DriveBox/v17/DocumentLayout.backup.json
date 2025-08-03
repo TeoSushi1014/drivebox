@@ -1,0 +1,120 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "D:\\Projects\\drivebox\\DriveBox\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{81D1015B-B62B-448F-BC96-F302A436C597}|DriveBox.csproj|d:\\projects\\drivebox\\drivebox\\drivebox.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|",
+      "RelativeMoniker": "D:0:0:{81D1015B-B62B-448F-BC96-F302A436C597}|DriveBox.csproj|solutionrelative:drivebox.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{81D1015B-B62B-448F-BC96-F302A436C597}|DriveBox.csproj|d:\\projects\\drivebox\\drivebox\\viewmodels\\windows\\mainwindowviewmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{81D1015B-B62B-448F-BC96-F302A436C597}|DriveBox.csproj|solutionrelative:viewmodels\\windows\\mainwindowviewmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{81D1015B-B62B-448F-BC96-F302A436C597}|DriveBox.csproj|d:\\projects\\drivebox\\drivebox\\viewmodels\\pages\\settingsviewmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{81D1015B-B62B-448F-BC96-F302A436C597}|DriveBox.csproj|solutionrelative:viewmodels\\pages\\settingsviewmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{81D1015B-B62B-448F-BC96-F302A436C597}|DriveBox.csproj|d:\\projects\\drivebox\\drivebox\\viewmodels\\pages\\dataviewmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{81D1015B-B62B-448F-BC96-F302A436C597}|DriveBox.csproj|solutionrelative:viewmodels\\pages\\dataviewmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{81D1015B-B62B-448F-BC96-F302A436C597}|DriveBox.csproj|d:\\projects\\drivebox\\drivebox\\views\\pages\\datapage.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{81D1015B-B62B-448F-BC96-F302A436C597}|DriveBox.csproj|solutionrelative:views\\pages\\datapage.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{81D1015B-B62B-448F-BC96-F302A436C597}|DriveBox.csproj|d:\\projects\\drivebox\\drivebox\\views\\windows\\mainwindow.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}",
+      "RelativeMoniker": "D:0:0:{81D1015B-B62B-448F-BC96-F302A436C597}|DriveBox.csproj|solutionrelative:views\\windows\\mainwindow.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 2,
+          "Children": [
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{aa2115a1-9712-457b-9047-dbb71ca2cdd2}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "MainWindowViewModel.cs",
+              "DocumentMoniker": "D:\\Projects\\drivebox\\DriveBox\\ViewModels\\Windows\\MainWindowViewModel.cs",
+              "RelativeDocumentMoniker": "ViewModels\\Windows\\MainWindowViewModel.cs",
+              "ToolTip": "D:\\Projects\\drivebox\\DriveBox\\ViewModels\\Windows\\MainWindowViewModel.cs",
+              "RelativeToolTip": "ViewModels\\Windows\\MainWindowViewModel.cs",
+              "ViewState": "AgIAAAYAAAAAAAAAAAAAAAkAAAAcAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-07-28T11:26:51.154Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "DriveBox.csproj",
+              "DocumentMoniker": "D:\\Projects\\drivebox\\DriveBox\\DriveBox.csproj",
+              "RelativeDocumentMoniker": "DriveBox.csproj",
+              "ToolTip": "D:\\Projects\\drivebox\\DriveBox\\DriveBox.csproj",
+              "RelativeToolTip": "DriveBox.csproj",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAUAAAAPAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000758|",
+              "WhenOpened": "2025-07-28T09:17:32.542Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "MainWindow.xaml",
+              "DocumentMoniker": "D:\\Projects\\drivebox\\DriveBox\\Views\\Windows\\MainWindow.xaml",
+              "RelativeDocumentMoniker": "Views\\Windows\\MainWindow.xaml",
+              "ToolTip": "D:\\Projects\\drivebox\\DriveBox\\Views\\Windows\\MainWindow.xaml",
+              "RelativeToolTip": "Views\\Windows\\MainWindow.xaml",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003549|",
+              "WhenOpened": "2025-07-28T08:15:17.39Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "DataPage.xaml.cs",
+              "DocumentMoniker": "D:\\Projects\\drivebox\\DriveBox\\Views\\Pages\\DataPage.xaml.cs",
+              "RelativeDocumentMoniker": "Views\\Pages\\DataPage.xaml.cs",
+              "ToolTip": "D:\\Projects\\drivebox\\DriveBox\\Views\\Pages\\DataPage.xaml.cs",
+              "RelativeToolTip": "Views\\Pages\\DataPage.xaml.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-07-28T08:15:07.582Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "SettingsViewModel.cs",
+              "DocumentMoniker": "D:\\Projects\\drivebox\\DriveBox\\ViewModels\\Pages\\SettingsViewModel.cs",
+              "RelativeDocumentMoniker": "ViewModels\\Pages\\SettingsViewModel.cs",
+              "ToolTip": "D:\\Projects\\drivebox\\DriveBox\\ViewModels\\Pages\\SettingsViewModel.cs",
+              "RelativeToolTip": "ViewModels\\Pages\\SettingsViewModel.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABwAAAAjAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-07-28T08:14:56.659Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "DataViewModel.cs",
+              "DocumentMoniker": "D:\\Projects\\drivebox\\DriveBox\\ViewModels\\Pages\\DataViewModel.cs",
+              "RelativeDocumentMoniker": "ViewModels\\Pages\\DataViewModel.cs",
+              "ToolTip": "D:\\Projects\\drivebox\\DriveBox\\ViewModels\\Pages\\DataViewModel.cs",
+              "RelativeToolTip": "ViewModels\\Pages\\DataViewModel.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAoAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-07-28T08:14:48.148Z"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

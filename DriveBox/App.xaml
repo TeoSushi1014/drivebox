@@ -1,0 +1,40 @@
+﻿<Application
+    x:Class="DriveBox.App"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+    xmlns:helpers="clr-namespace:DriveBox.Helpers"
+    ShutdownMode="OnExplicitShutdown"
+    DispatcherUnhandledException="OnDispatcherUnhandledException"
+    Exit="OnExit"
+    Startup="OnStartup">
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ui:ThemesDictionary Theme="Dark" />
+                <ui:ControlsDictionary />
+            </ResourceDictionary.MergedDictionaries>
+
+            <helpers:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+            <helpers:InverseBooleanConverter x:Key="InverseBooleanConverter"/>
+            <helpers:InverseBooleanToVisibilityConverter x:Key="InverseBooleanToVisibilityConverter"/>
+            <helpers:CountToVisibilityConverter x:Key="CountToVisibilityConverter"/>
+            <helpers:PercentageToWidthConverter x:Key="PercentageToWidthConverter"/>
+            <helpers:BrushToColorConverter x:Key="BrushToColorConverter"/>
+            <helpers:PercentageToActualWidthConverter x:Key="PercentageToActualWidthConverter"/>
+            <helpers:PercentageToMarginConverter x:Key="PercentageToMarginConverter"/>
+            <helpers:AndBooleanToVisibilityConverter x:Key="AndBooleanToVisibilityConverter"/>
+            <helpers:StringToVisibilityConverter x:Key="StringToVisibilityConverter"/>
+            <helpers:NullToVisibilityConverter x:Key="NullToVisibilityConverter"/>
+            <helpers:StringNullOrEmptyToBoolean x:Key="StringNullOrEmptyToBoolean"/>
+            <helpers:EnumToBooleanConverter x:Key="EnumToBooleanConverter"/>
+            <helpers:BooleanToStringConverter x:Key="BooleanToStringConverter"/>
+            
+            <!-- Fix for WPF binding errors in debug output -->
+            <Style TargetType="ComboBoxItem">
+                <Setter Property="HorizontalContentAlignment" Value="Left" />
+                <Setter Property="VerticalContentAlignment" Value="Center" />
+            </Style>
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>
