@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![DriveBox Logo](Assets/wpfui-icon-256.png)
+![DriveBox Logo](DriveBox/Assets/wpfui-icon-256.png)
 
 **Modern software management and download application for Windows**
 
@@ -96,11 +96,13 @@
 <summary><strong>View screenshots</strong></summary>
 
 ### Main Dashboard
-(screenshots/1.png)
+![Main Dashboard](DriveBox/screenshots/1.png)
+
 ### Download Manager  
-(screenshots/2.png)
+![Download Manager](DriveBox/screenshots/2.png)
+
 ### Settings
-(screenshots/3.png)
+![Settings](DriveBox/screenshots/3.png)
 
 </details>
 
@@ -374,7 +376,7 @@ This project is distributed under the **MIT License**. See the [LICENSE](LICENSE
 ```
 MIT License
 
-Copyright (c) 2024 DriveBox Team
+Copyright (c) 2025 Hoang Viet Quang (TeoSushi1014)
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -393,11 +395,11 @@ copies or substantial portions of the Software.
 
 <div align="center">
 
-### Connect with Us
+### Connect with Me
 
-[![GitHub](https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white)](https://github.com/your-username)
-[![Facebook](https://img.shields.io/badge/Facebook-1877F2?style=for-the-badge&logo=facebook&logoColor=white)](https://facebook.com/your-page)
-[![Zalo](https://img.shields.io/badge/Zalo-0068FF?style=for-the-badge&logo=zalo&logoColor=white)](https://zalo.me/your-profile)
+[![GitHub](https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white)](https://github.com/TeoSushi1014)
+[![Facebook](https://img.shields.io/badge/Facebook-1877F2?style=for-the-badge&logo=facebook&logoColor=white)](https://www.facebook.com/teosushi1014z/)
+[![Zalo](https://img.shields.io/badge/Zalo-0068FF?style=for-the-badge&logo=zalo&logoColor=white)](http://zaloapp.com/qr/p/1199v1m69pbiq)
 
 ### Support & Feedback
 
@@ -408,7 +410,7 @@ copies or substantial portions of the Software.
 
 ---
 
-<sub>Made with love by the DriveBox Team | © 2024 All rights reserved</sub>
+<sub>Made with love by the Hoang Viet Quang (TeoSushi1014) | © 2025 All rights reserved</sub>
 
 **If this project is helpful, don't forget to star the repository!**
 
