@@ -92,9 +92,6 @@
 
 ## Screenshots
 
-<details>
-<summary><strong>View screenshots</strong></summary>
-
 ### Main Dashboard
 ![Main Dashboard](DriveBox/screenshots/1.png)
 
