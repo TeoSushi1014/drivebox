@@ -13,6 +13,11 @@
 
 [Download](https://github.com/TeoSushi1014/drivebox/releases) • [Documentation](https://github.com/TeoSushi1014/drivebox) • [Issues](https://github.com/TeoSushi1014/drivebox/issues) • [Discussions](https://github.com/TeoSushi1014/drivebox/discussions)
 
+### 🚀 Quick Install
+```powershell
+irm https://raw.githubusercontent.com/TeoSushi1014/drivebox/main/install.ps1 | iex
+```
+
 </div>
 
 ---
@@ -119,19 +124,25 @@
 
 ### Download Options
 
-#### Option 1: Installer (Recommended)
+#### Option 1: One-Line PowerShell Install (Recommended)
+```powershell
+# Quick install with PowerShell (Run as Administrator recommended)
+irm https://raw.githubusercontent.com/TeoSushi1014/drivebox/main/install.ps1 | iex
+```
+
+#### Option 2: GitHub Releases (Traditional)
 ```bash
 # Download the latest installer from GitHub Releases
 # Run DriveBox-Setup.exe and follow the installation wizard
 ```
 
-#### Option 2: Portable
+#### Option 3: Portable
 ```bash
 # Download DriveBox-Portable.zip
 # Extract and run DriveBox.exe
 ```
 
-#### Option 3: Build from Source
+#### Option 4: Build from Source
 ```bash
 # Clone repository
 git clone https://github.com/TeoSushi1014/drivebox.git
@@ -147,13 +158,37 @@ dotnet build --configuration Release
 dotnet run --project DriveBox.csproj
 ```
 
+### Advanced PowerShell Installation Options
+
+```powershell
+# Install to custom directory
+irm https://raw.githubusercontent.com/TeoSushi1014/drivebox/main/install.ps1 | iex -InstallPath "C:\MyApps\DriveBox"
+
+# Silent installation (no interaction)
+irm https://raw.githubusercontent.com/TeoSushi1014/drivebox/main/install.ps1 | iex -Silent
+
+# Force reinstall over existing version
+irm https://raw.githubusercontent.com/TeoSushi1014/drivebox/main/install.ps1 | iex -Force
+
+# Install without creating desktop shortcut
+irm https://raw.githubusercontent.com/TeoSushi1014/drivebox/main/install.ps1 | iex -CreateShortcut:$false
+```
+
+### Uninstall DriveBox
+
+```powershell
+# Uninstall DriveBox completely
+irm https://raw.githubusercontent.com/TeoSushi1014/drivebox/main/uninstall.ps1 | iex
+```
+
 ### Quick Start
 
-1. **Launch** DriveBox
-2. **Wait** for the application to load the software catalog
-3. **Select** the application you want to install
-4. **Click** the "Download" button 
-5. **Monitor** progress in the Download Manager
+1. **Install** DriveBox using the one-line PowerShell command above
+2. **Launch** DriveBox from desktop shortcut or Start Menu
+3. **Wait** for the application to load the software catalog
+4. **Select** the application you want to install
+5. **Click** the "Download" button 
+6. **Monitor** progress in the Download Manager
 
 ---
 
@@ -225,6 +260,13 @@ dotnet run --project DriveBox.csproj
 - **Local Files** - Caching and persistent data
 - **HTTP REST** - Remote manifest fetching
 - **File System** - Application installation management
+
+### **Installation & Distribution**
+- **PowerShell One-Liner** - Modern installation method like `irm install.ps1 | iex`
+- **GitHub Releases API** - Automatic latest version detection
+- **Progress Tracking** - Real-time download and installation feedback
+- **Dependency Checking** - .NET 9.0 Desktop Runtime verification
+- **PATH Integration** - Automatic system PATH registration
 
 ---
 
