@@ -1,13 +1,20 @@
 # DriveBox PowerShell Installer
-# Usage: irm https://yourdomain.com/install.ps1 | iex
-# Or: irm https://raw.githubusercontent.com/TeoSushi1014/drivebox/main/install.ps1 | iex
+# Usage: irm https://raw.githubusercontent.com/TeoSushi1014/drivebox/main/install.ps1 | iex
+#
+# Parameters:
+# -InstallPath "C:\Custom\Path"  : Custom installation directory
+# -Silent                        : No user interaction, no banner, no launch
+# -Force                         : Reinstall over existing installation
+# -CreateShortcut:$false         : Skip desktop shortcut creation
+# -NoLaunch                      : Don't auto-launch after installation
 
 param(
     [string]$InstallPath = "$env:LOCALAPPDATA\DriveBox",
     [string]$Version = "latest",
     [switch]$Force,
     [switch]$Silent,
-    [switch]$CreateShortcut = $true
+    [switch]$CreateShortcut = $true,
+    [switch]$NoLaunch
 )
 
 # Configuration
@@ -300,12 +307,16 @@ else {
         Write-Host "irm https://yourdomain.com/uninstall.ps1 | iex" -ForegroundColor White
         Write-Host ""
         
-        # Ask to launch
-        if (-not $Silent) {
-            $choice = Read-Host "Do you want to launch DriveBox now? (Y/n)"
-            if ($choice.ToLower() -ne "n") {
-                Write-StatusMsg "Launching DriveBox..." "INFO"
-                Start-Process -FilePath $exePath
+        # Auto-launch application (unless Silent mode or NoLaunch specified)
+        if (-not $Silent -and -not $NoLaunch) {
+            Write-StatusMsg "Launching DriveBox..." "INFO"
+            try {
+                Start-Process -FilePath $exePath -ErrorAction Stop
+                Write-StatusMsg "DriveBox launched successfully" "SUCCESS"
+            }
+            catch {
+                Write-StatusMsg "Failed to launch DriveBox: $($_.Exception.Message)" "WARNING"
+                Write-StatusMsg "You can manually launch it from: $exePath" "INFO"
             }
         }
         

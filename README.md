@@ -164,7 +164,7 @@ dotnet run --project DriveBox.csproj
 # Install to custom directory
 irm https://raw.githubusercontent.com/TeoSushi1014/drivebox/main/install.ps1 | iex -InstallPath "C:\MyApps\DriveBox"
 
-# Silent installation (no interaction)
+# Silent installation (no interaction, no auto-launch)
 irm https://raw.githubusercontent.com/TeoSushi1014/drivebox/main/install.ps1 | iex -Silent
 
 # Force reinstall over existing version
@@ -172,6 +172,9 @@ irm https://raw.githubusercontent.com/TeoSushi1014/drivebox/main/install.ps1 | i
 
 # Install without creating desktop shortcut
 irm https://raw.githubusercontent.com/TeoSushi1014/drivebox/main/install.ps1 | iex -CreateShortcut:$false
+
+# Install without auto-launching the application
+irm https://raw.githubusercontent.com/TeoSushi1014/drivebox/main/install.ps1 | iex -NoLaunch
 ```
 
 ### Uninstall DriveBox
@@ -184,7 +187,7 @@ irm https://raw.githubusercontent.com/TeoSushi1014/drivebox/main/uninstall.ps1 |
 ### Quick Start
 
 1. **Install** DriveBox using the one-line PowerShell command above
-2. **Launch** DriveBox from desktop shortcut or Start Menu
+2. **DriveBox will automatically launch** after installation completes
 3. **Wait** for the application to load the software catalog
 4. **Select** the application you want to install
 5. **Click** the "Download" button 
