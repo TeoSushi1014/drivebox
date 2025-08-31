@@ -1,0 +1,29 @@
+# Visual Studio files
+.vs/
+*.user
+*.suo
+*.cache
+*.dll
+*.exe
+*.pdb
+
+# Build outputs
+bin/
+obj/
+Debug/
+Release/
+x64/
+x86/
+
+# NuGet packages
+packages/
+*.nupkg
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+
+# OS generated files
+.DS_Store
+Thumbs.db
