@@ -8,7 +8,7 @@ namespace DriveBox.ViewModels.Windows
     public partial class MainWindowViewModel : ObservableObject
     {
         [ObservableProperty]
-        private string _applicationTitle = "WPF UI - DriveBox";
+        private string _applicationTitle = "DriveBox";
 
         [ObservableProperty]
         private ObservableCollection<object> _menuItems = 

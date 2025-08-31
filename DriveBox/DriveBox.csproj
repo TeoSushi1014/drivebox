@@ -4,6 +4,8 @@
 	<Version>2.0.1.0</Version>
 	<AssemblyVersion>2.0.1.0</AssemblyVersion>
 	<FileVersion>2.0.1.0</FileVersion>
+	<AssemblyTitle>DriveBox</AssemblyTitle>
+	<Product>DriveBox</Product>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net9.0-windows</TargetFramework>
     <ApplicationManifest>app.manifest</ApplicationManifest>
