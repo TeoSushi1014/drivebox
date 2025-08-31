@@ -25,7 +25,6 @@ $ExecutableName = "DriveBox.exe"
 # Display banner
 if (-not $Silent) {
     Write-Host ""
-    Write-Host "🚀 " -NoNewline -ForegroundColor Green
     Write-Host "DriveBox Installer " -NoNewline -ForegroundColor Cyan
     Write-Host "v2.0.0" -ForegroundColor Gray
     Write-Host "   Modern Software Management for Windows" -ForegroundColor Gray
@@ -85,16 +84,13 @@ function Download-FileWithProgress {
     try {
         Write-StatusMsg "Downloading from: $Url"
         
-        # Create webclient for progress tracking
         $webClient = New-Object System.Net.WebClient
         
-        # Register progress event
         Register-ObjectEvent -InputObject $webClient -EventName DownloadProgressChanged -Action {
             $Global:DownloadProgress = $Event.SourceEventArgs.ProgressPercentage
             Write-Progress -Activity "Downloading DriveBox" -Status "$($Global:DownloadProgress)% Complete" -PercentComplete $Global:DownloadProgress
         } | Out-Null
         
-        # Download the file
         $webClient.DownloadFile($Url, $OutFile)
         $webClient.Dispose()
         
@@ -204,24 +200,11 @@ function Test-InstallationExists {
 # Main installation function
 function Install-DriveBox {
     try {
-        # Check if already installed
         if ((Test-InstallationExists $InstallPath) -and (-not $Force)) {
             Write-StatusMsg "DriveBox is already installed at: $InstallPath" "WARNING"
-            Write-StatusMsg "Use -Force parameter to reinstall" "INFO"
-            
-            if (-not $Silent) {
-                $choice = Read-Host "Do you want to reinstall? (y/N)"
-                if ($choice.ToLower() -ne "y") {
-                    Write-StatusMsg "Installation cancelled by user" "INFO"
-                    return
-                }
-            }
-            else {
-                return
-            }
+            Write-StatusMsg "Automatically reinstalling..." "INFO"
         }
         
-        # Get release information
         $release = Get-LatestRelease
         if (-not $release.DownloadUrl) {
             throw "No suitable download found for Windows x64"
@@ -229,31 +212,25 @@ function Install-DriveBox {
         
         Write-StatusMsg "Latest version: $($release.Version)" "INFO"
         
-        # Create temp directory
         $tempDir = Join-Path $env:TEMP "DriveBoxInstaller"
         if (Test-Path $tempDir) {
             Remove-Item $tempDir -Recurse -Force
         }
         New-Item -ItemType Directory -Path $tempDir -Force | Out-Null
         
-        # Download file
         $fileName = Split-Path $release.DownloadUrl -Leaf
         $downloadPath = Join-Path $tempDir $fileName
         Download-FileWithProgress -Url $release.DownloadUrl -OutFile $downloadPath
         
-        # Create installation directory
         if (Test-Path $InstallPath) {
             Remove-Item $InstallPath -Recurse -Force
         }
         New-Item -ItemType Directory -Path $InstallPath -Force | Out-Null
         
-        # Extract or move files
         Expand-ArchiveIfNeeded -FilePath $downloadPath -Destination $InstallPath
         
-        # Verify installation
         $exePath = Join-Path $InstallPath $ExecutableName
         if (-not (Test-Path $exePath)) {
-            # Try to find executable in subdirectories
             $exePath = Get-ChildItem -Path $InstallPath -Name $ExecutableName -Recurse | Select-Object -First 1
             if ($exePath) {
                 $exePath = Join-Path $InstallPath $exePath
@@ -265,14 +242,12 @@ function Install-DriveBox {
         
         Write-StatusMsg "DriveBox installed successfully to: $InstallPath" "SUCCESS"
         
-        # Create shortcuts and PATH entry
         if ($CreateShortcut) {
             New-DesktopShortcut -TargetPath $exePath
         }
         
         Add-ToPath -PathToAdd $InstallPath
         
-        # Create uninstaller
         $uninstallScript = @"
 # DriveBox Uninstaller
 Write-Host "Removing DriveBox..." -ForegroundColor Yellow
@@ -287,16 +262,14 @@ else {
         $uninstallPath = Join-Path $InstallPath "uninstall.ps1"
         Set-Content -Path $uninstallPath -Value $uninstallScript
         
-        # Clean up temp files
         Remove-Item $tempDir -Recurse -Force -ErrorAction SilentlyContinue
         
-        # Display completion message
         Write-StatusMsg "Installation completed successfully!" "SUCCESS"
         Write-Host ""
-        Write-Host "✓ DriveBox has been installed to: " -ForegroundColor Green -NoNewline
+        Write-Host "DriveBox has been installed to: " -ForegroundColor Green -NoNewline
         Write-Host $InstallPath -ForegroundColor White
-        Write-Host "✓ Desktop shortcut created" -ForegroundColor Green
-        Write-Host "✓ Added to PATH" -ForegroundColor Green
+        Write-Host "Desktop shortcut created" -ForegroundColor Green
+        Write-Host "Added to PATH" -ForegroundColor Green
         Write-Host ""
         Write-Host "To start DriveBox:" -ForegroundColor Cyan
         Write-Host "  • Double-click the desktop shortcut" -ForegroundColor White
@@ -307,7 +280,6 @@ else {
         Write-Host "irm https://yourdomain.com/uninstall.ps1 | iex" -ForegroundColor White
         Write-Host ""
         
-        # Auto-launch application (unless Silent mode or NoLaunch specified)
         if (-not $Silent -and -not $NoLaunch) {
             Write-StatusMsg "Launching DriveBox..." "INFO"
             try {
@@ -327,37 +299,54 @@ else {
     }
 }
 
-# Main execution
 try {
-    # Check PowerShell version
     if ($PSVersionTable.PSVersion.Major -lt 5) {
         Write-StatusMsg "PowerShell 5.0 or higher is required" "ERROR"
         exit 1
     }
     
-    # Check .NET requirements
     try {
+        Write-StatusMsg "Checking .NET 9.0 Desktop Runtime..." "INFO"
         $dotnetVersions = dotnet --list-runtimes 2>$null | Where-Object { $_ -like "*Microsoft.WindowsDesktop.App*" }
         $hasNet9 = $dotnetVersions | Where-Object { $_ -like "*9.*" }
         
         if (-not $hasNet9) {
-            Write-StatusMsg ".NET 9.0 Desktop Runtime is required but not found" "WARNING"
-            Write-StatusMsg "DriveBox may not run properly without .NET 9.0" "WARNING"
-            Write-StatusMsg "Download from: https://dotnet.microsoft.com/download/dotnet/9.0" "INFO"
+            Write-StatusMsg ".NET 9.0 Desktop Runtime not found, installing automatically..." "WARNING"
             
-            if (-not $Silent) {
-                $choice = Read-Host "Continue installation anyway? (y/N)"
-                if ($choice.ToLower() -ne "y") {
-                    exit 1
+            $dotnetUrl = "https://download.microsoft.com/download/6/c/8/6c8b6f44-ffa1-4096-b0f3-bfc5d4e64c8a/windowsdesktop-runtime-9.0.0-win-x64.exe"
+            $dotnetInstaller = Join-Path $env:TEMP "dotnet-9.0-desktop-runtime.exe"
+            
+            try {
+                Write-StatusMsg "Downloading .NET 9.0 Desktop Runtime..." "INFO"
+                $webClient = New-Object System.Net.WebClient
+                $webClient.DownloadFile($dotnetUrl, $dotnetInstaller)
+                $webClient.Dispose()
+                
+                Write-StatusMsg "Installing .NET 9.0 Desktop Runtime (this may take a few minutes)..." "INFO"
+                $installProcess = Start-Process -FilePath $dotnetInstaller -ArgumentList "/quiet", "/norestart" -Wait -PassThru
+                
+                if ($installProcess.ExitCode -eq 0) {
+                    Write-StatusMsg ".NET 9.0 Desktop Runtime installed successfully" "SUCCESS"
+                    Remove-Item $dotnetInstaller -Force -ErrorAction SilentlyContinue
+                }
+                else {
+                    Write-StatusMsg ".NET 9.0 installation failed with exit code: $($installProcess.ExitCode)" "ERROR"
+                    Write-StatusMsg "DriveBox may not run properly without .NET 9.0" "WARNING"
                 }
             }
+            catch {
+                Write-StatusMsg "Failed to download/install .NET 9.0: $($_.Exception.Message)" "ERROR"
+                Write-StatusMsg "Please manually install .NET 9.0 from: https://dotnet.microsoft.com/download/dotnet/9.0" "WARNING"
+            }
+        }
+        else {
+            Write-StatusMsg ".NET 9.0 Desktop Runtime found" "SUCCESS"
         }
     }
     catch {
         Write-StatusMsg "Unable to check .NET version, continuing..." "WARNING"
     }
     
-    # Run installation
     Install-DriveBox
     
 }
