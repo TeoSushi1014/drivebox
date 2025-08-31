@@ -104,12 +104,11 @@
 
 
             <Grid Grid.Row="1">
-                <ScrollViewer VerticalScrollBarVisibility="Auto"
-                              Margin="20,0,20,20"
-                              Visibility="{Binding FilteredApps.Count, Converter={StaticResource CountToVisibilityConverter}, ConverterParameter=invert}">
-                    <ItemsControl ItemsSource="{Binding FilteredApps}"
-                                 VirtualizingStackPanel.IsVirtualizing="True"
-                                 VirtualizingStackPanel.VirtualizationMode="Recycling">
+                <ItemsControl ItemsSource="{Binding FilteredApps}"
+                             VirtualizingStackPanel.IsVirtualizing="True"
+                             VirtualizingStackPanel.VirtualizationMode="Recycling"
+                             Margin="20,0,20,20"
+                             Visibility="{Binding FilteredApps.Count, Converter={StaticResource CountToVisibilityConverter}, ConverterParameter=invert}">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
                                 <WrapPanel/>
@@ -328,7 +327,8 @@
                                                                    IsIndeterminate="True"
                                                                    Margin="0,0,6,0"
                                                                    Visibility="{Binding IsDownloading, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-                                                    <TextBlock VerticalAlignment="Center">
+                                                    <TextBlock VerticalAlignment="Center"
+                                                               Foreground="Black">
                                                         <TextBlock.Style>
                                                             <Style TargetType="TextBlock">
                                                                 <Setter Property="Text" Value="Tải xuống"/>
@@ -393,7 +393,6 @@
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
-                </ScrollViewer>
 
                 <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
                         CornerRadius="8"
@@ -474,8 +473,7 @@
                     </Grid>
                     
 
-                    <ScrollViewer MaxHeight="300" VerticalScrollBarVisibility="Auto">
-                        <ItemsControl ItemsSource="{Binding ActiveDownloads}">
+                    <ItemsControl ItemsSource="{Binding ActiveDownloads}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
                                     <Border Background="{DynamicResource ControlFillColorDefaultBrush}"
@@ -597,7 +595,6 @@
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
-                    </ScrollViewer>
                 </StackPanel>
             </Border>
         </Grid>

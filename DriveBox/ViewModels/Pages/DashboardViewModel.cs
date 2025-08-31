@@ -66,6 +66,12 @@ namespace DriveBox.ViewModels.Pages
         public bool CanCancelDownloads => HasActiveDownloads && !IsUpdateInProgress;
         public bool CanStartNewDownloads => !IsUpdateInProgress;
 
+        partial void OnHasActiveDownloadsChanged(bool value)
+        {
+            OnPropertyChanged(nameof(CanCancelDownloads));
+            CancelAllDownloadsCommand.NotifyCanExecuteChanged();
+        }
+
         partial void OnIsUpdateInProgressChanged(bool value)
         {
             OnPropertyChanged(nameof(CanCancelDownloads));
@@ -1296,11 +1302,9 @@ namespace DriveBox.ViewModels.Pages
             TotalActiveDownloads = ActiveDownloads.Count;
             HasActiveDownloads = ActiveDownloads.Count > 0;
             
-
+            // Notify UI that CanCancelDownloads might have changed
+            OnPropertyChanged(nameof(CanCancelDownloads));
             CancelAllDownloadsCommand.NotifyCanExecuteChanged();
-            
-
-
         }
 
         private void RemoveCompletedDownload(DownloadItem downloadItem)
