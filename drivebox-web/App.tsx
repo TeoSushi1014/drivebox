@@ -222,7 +222,7 @@ const AppContent: React.FC = () => {
 
   return (
     <div className={`min-h-screen flex flex-col font-sans bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-100 transition-colors duration-500`}>
-      <Router>
+      <Router basename="/drivebox">
         <Routes>
           <Route path="/" element={
             <HomePage 
