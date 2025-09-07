@@ -204,13 +204,13 @@ const MainSections: React.FC<MainSectionsProps> = ({ language }) => {
                 className="w-full aspect-video"
                 controls
                 preload="metadata"
-                poster="/assets/video-poster.jpg"
+                poster="./assets/video-poster.jpg"
                 controlsList="nodownload"
               >
-                <source src="/assets/video.mp4" type="video/mp4" />
+                <source src="./assets/video.mp4" type="video/mp4" />
                 <p className="text-white text-center p-8">
                   Trình duyệt của bạn không hỗ trợ video HTML5. 
-                  <a href="/assets/video.mp4" className="text-blue-400 underline ml-2">
+                  <a href="./assets/video.mp4" className="text-blue-400 underline ml-2">
                     Tải video trực tiếp
                   </a>
                 </p>
