@@ -1,33 +1,57 @@
-# Visual Studio files
-.vs/
+# Node / Vite
+node_modules/
+drivebox-web/node_modules/
+drivebox-web/dist/
+dist/
+build/
+.vite/
+.cache/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Environment files
+.env
+.env.*
+.env.local
+
+# Logs
+*.log
+
+# Editor / IDE
+.vscode/
+.idea/
 *.user
 *.suo
-*.cache
-*.dll
-*.exe
-*.pdb
+.vs/
 
-# Build outputs
-bin/
-obj/
-Debug/
-Release/
-x64/
-x86/
+# OS generated files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Public assets (large media)
+public/assets/*.mp4
+
+# .NET / Visual Studio
+**/bin/
+**/obj/
+DriveBox/bin/
+DriveBox/obj/
+*.userosscache
+*.sln.docstates
+PublishProfiles/
+*.pdb
+*.exe
+*.dll
 
 # NuGet packages
 packages/
 *.nupkg
 
-# Temporary files
-*.tmp
-*.temp
-*.log
-
-# OS generated files
-.DS_Store
-Thumbs.db
-
-# GitHub Copilot and Git files
+# Misc
 .github/copilot-instructions.md
-.gitignore
