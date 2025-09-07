@@ -1,13 +1,385 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vite + React + TS</title>
-  </head>
-  <body>
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DriveBox | Phần Mềm Quản Lý Thi Bằng Lái Xe</title>
+    
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="DriveBox - Phần mềm quản lý thi bằng lái xe hàng đầu. Tải xuống và cài đặt dễ dàng, miễn phí và mã nguồn mở.">
+    <meta name="keywords" content="DriveBox, thi bằng lái xe, phần mềm thi bằng lái, lái xe, bằng lái B2, Windows, miễn phí">
+    
+    <!-- Open Graph Tags -->
+    <meta property="og:title" content="DriveBox | Phần Mềm Quản Lý Thi Bằng Lái Xe">
+    <meta property="og:description" content="DriveBox - Phần mềm quản lý thi bằng lái xe hàng đầu. Tải xuống và cài đặt dễ dàng, miễn phí và mã nguồn mở.">
+    <meta property="og:image" content="/assets/drivebox-og-image.jpg">
+    <meta property="og:url" content="https://drivebox.teosushi.com">
+    <meta property="og:type" content="website">
+    
+    <!-- Twitter Card Tags -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="DriveBox | Phần Mềm Quản Lý Thi Bằng Lái Xe">
+    <meta name="twitter:description" content="DriveBox - Phần mềm quản lý thi bằng lái xe hàng đầu. Tải xuống và cài đặt dễ dàng, miễn phí và mã nguồn mở.">
+    <meta name="twitter:image" content="/assets/drivebox-og-image.jpg">
+
+    <script>
+        // Check and apply theme before page loads - default to dark mode
+        if (localStorage.getItem('theme') === 'light') {
+            document.documentElement.classList.remove('dark');
+        } else {
+            document.documentElement.classList.add('dark');
+        }
+    </script>
+    <link rel="icon" type="image/x-icon" href="/assets/logo/avt.ico">
+    
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-0SP499VN6X"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-0SP499VN6X');
+      gtag('config', 'GT-MK4T6T7');
+    </script>
+    <!-- End Google tag -->
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Segoe UI Variable"', '"Segoe UI"', 'system-ui', '-apple-system', 'BlinkMacSystemFont', '"Roboto"', '"Helvetica Neue"', 'Arial', 'sans-serif'],
+                    },
+                    colors: {
+                        primary: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            200: '#bae6fd',
+                            300: '#7dd3fc',
+                            400: '#38bdf8',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                        },
+                        secondary: {
+                            50: '#fdf2f8',
+                            100: '#fce7f3',
+                            200: '#fbcfe8',
+                            300: '#f9a8d4',
+                            400: '#f472b6',
+                            500: '#ec4899',
+                            600: '#db2777',
+                        }
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1)',
+                        'slide-up': 'slideUp 0.8s cubic-bezier(0.16, 1, 0.3, 1)',
+                        'slide-down': 'slideDown 0.6s cubic-bezier(0.16, 1, 0.3, 1)',
+                        'bounce-soft': 'bounceSoft 2s cubic-bezier(0.68, -0.6, 0.32, 1.6) infinite',
+                        'float': 'float 3s cubic-bezier(0.4, 0, 0.2, 1) infinite',
+                        'pulse-soft': 'pulseSoft 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'scale': 'scale 0.6s cubic-bezier(0.16, 1, 0.3, 1)', 
+                        'spring': 'spring 0.8s cubic-bezier(0.68, -0.6, 0.32, 1.6)',
+                        'elastic': 'elastic 1s cubic-bezier(0.68, -0.6, 0.32, 1.6)',
+                        'rubber': 'rubber 0.8s cubic-bezier(0.68, -0.6, 0.32, 1.6)',
+                        'jello': 'jello 0.8s cubic-bezier(0.68, -0.6, 0.32, 1.6)',
+                        'gradient': 'gradientMove 5s ease-in-out infinite',
+                        'gradient-xy': 'gradient-xy 3s ease infinite',
+                        'glow-pulse': 'glowPulse 2s ease-in-out infinite',
+                        'gradient-border': 'gradientBorder 3s ease infinite'
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0', transform: 'scale(0.96) translateY(10px)' },
+                            '100%': { opacity: '1', transform: 'scale(1) translateY(0)' },
+                        },
+                        slideUp: {
+                            '0%': { opacity: '0', transform: 'translateY(30px) scale(0.96)' },
+                            '100%': { opacity: '1', transform: 'translateY(0) scale(1)' },
+                        },
+                        slideDown: {
+                            '0%': { opacity: '0', transform: 'translateY(-30px) scale(0.96)' },
+                            '100%': { opacity: '1', transform: 'translateY(0) scale(1)' },
+                        },
+                        bounceSoft: {
+                            '0%, 100%': { transform: 'translateY(0) scale(1)' },
+                            '50%': { transform: 'translateY(-15px) scale(0.97)' },
+                        },
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-10px)' },
+                        },
+                        pulseSoft: {
+                            '0%, 100%': { opacity: '1', transform: 'scale(1)' },
+                            '50%': { opacity: '0.8', transform: 'scale(0.98)' },
+                        },
+                        scale: { 
+                            '0%': { transform: 'scale(0.96)', opacity: '0' },
+                            '100%': { transform: 'scale(1)', opacity: '1' },
+                        },
+                        spring: {
+                            '0%': { transform: 'scale(0.8)' },
+                            '50%': { transform: 'scale(1.1)' },
+                            '70%': { transform: 'scale(0.95)' },
+                            '100%': { transform: 'scale(1)' },
+                        },
+                        elastic: {
+                            '0%': { transform: 'scale(1)' }, '25%': { transform: 'scale(0.95)' },
+                            '50%': { transform: 'scale(1.05)' }, '75%': { transform: 'scale(0.98)' },
+                            '100%': { transform: 'scale(1)' },
+                        },
+                        rubber: {
+                            '0%': { transform: 'scale(1)' }, '30%': { transform: 'scale(1.15)' },
+                            '40%': { transform: 'scale(0.95)' }, '50%': { transform: 'scale(1.05)' },
+                            '65%': { transform: 'scale(0.98)' }, '100%': { transform: 'scale(1)' },
+                        },
+                        jello: {
+                            '0%, 100%': { transform: 'scale(1, 1)' }, '30%': { transform: 'scale(1.15, 0.85)' },
+                            '40%': { transform: 'scale(0.95, 1.05)' }, '50%': { transform: 'scale(1.05, 0.95)' },
+                            '65%': { transform: 'scale(0.98, 1.02)' }, '75%': { transform: 'scale(1.02, 0.98)' },
+                        },
+                        gradientMove: {
+                            '0%, 100%': { 'background-position': '0% 50%' },
+                            '50%': { 'background-position': '100% 50%' },
+                        },
+                        'gradient-xy': {
+                            '0%, 100%': { 'background-size': '400% 400%', 'background-position': 'left center', 'transform': 'scale(1)' },
+                            '50%': { 'background-size': '200% 200%', 'background-position': 'right center', 'transform': 'scale(1.02)' }
+                        },
+                        glowPulse: { 
+                            '0%, 100%': { 'box-shadow': '0 0 15px rgba(14,165,233,0.3), 0 0 30px rgba(236,72,153,0.2)' },
+                            '50%': { 'box-shadow': '0 0 25px rgba(14,165,233,0.4), 0 0 50px rgba(236,72,153,0.3)' }
+                        },
+                        gradientBorder: { 
+                            '0%': { 'background-position': '0% 50%' },
+                            '50%': { 'background-position': '100% 50%' },
+                            '100%': { 'background-position': '0% 50%' }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer base {
+            html {
+                -webkit-overflow-scrolling: touch;
+                font-size: 17px; 
+                font-family: theme('fontFamily.sans'); 
+            }
+            * {
+                @apply transition-colors duration-300;
+            }
+            *:focus-visible {
+                @apply outline-none ring-2 ring-primary-500 ring-offset-2 
+                       ring-offset-white dark:ring-offset-gray-900;
+            }
+            body {
+                @apply bg-gray-50 dark:bg-gray-900;
+            }
+        }
+        @layer components {
+            .glass-card {
+                @apply relative bg-white/10 dark:bg-gray-900/10 backdrop-blur-lg 
+                       rounded-2xl border border-white/20 dark:border-gray-700/20 
+                       shadow-xl shadow-primary-500/5 z-[2];
+            }
+            .nav-link {
+                @apply relative px-4 py-2 text-gray-700 dark:text-gray-300 transition-colors duration-300
+                       hover:text-primary-500 dark:hover:text-primary-400;
+            }
+            .nav-link::after {
+                @apply content-[''] absolute bottom-0 left-0 w-0 h-0.5
+                       bg-gradient-to-r from-primary-500 to-secondary-500
+                       transition-all duration-300 ease-out;
+            }
+            .nav-link:hover::after, .nav-link.active-nav-link::after {
+                @apply w-full;
+            }
+            .nav-link.active-nav-link {
+                @apply text-primary-500 dark:text-primary-400;
+            }
+
+            .btn { 
+                @apply px-6 py-3 rounded-xl font-medium transition-all duration-200 ease-in-out transform hover:scale-105 focus:outline-none;
+            }
+            .btn-primary {
+                @apply btn relative overflow-hidden text-white z-[10]
+                       bg-gradient-to-r from-[#00B0FF] to-[#EC4899]
+                       bg-[length:200%_200%] animate-gradient;
+            }
+            .btn-secondary {
+                @apply btn relative overflow-hidden text-gray-800 dark:text-white z-[10]
+                       border-2 border-primary-500/30 bg-transparent hover:bg-primary-500/10 dark:hover:bg-primary-400/10;
+            }
+             .btn-primary:disabled, .btn-secondary:disabled {
+                @apply cursor-not-allowed opacity-70 hover:scale-100;
+            }
+            .form-input {
+                @apply w-full px-4 py-3 rounded-xl z-[10]
+                       bg-white/5 dark:bg-gray-800/5 
+                       backdrop-blur-sm border-2 border-primary-500/20 
+                       focus:border-primary-500/50 focus:ring-0 focus:outline-none 
+                       transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)]
+                       text-gray-800 dark:text-gray-100
+                       placeholder-gray-500 dark:placeholder-gray-400;
+            }
+            .gradient-text {
+                @apply font-bold bg-gradient-to-r from-primary-500 to-secondary-500 
+                       bg-clip-text text-transparent inline-block;
+            }
+            .tag {
+                @apply bg-primary-100 dark:bg-primary-500/30 text-primary-600 dark:text-primary-300 
+                       px-3 py-1 rounded-full text-sm font-medium;
+            }
+            .avatar-container {
+                @apply relative w-10 h-10 rounded-full overflow-hidden 
+                       transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] focus:outline-none cursor-pointer z-[999]
+                       animate-gradient-border animate-glow-pulse; 
+                background: linear-gradient(45deg, #0ea5e9, #ec4899, #0ea5e9); 
+                background-size: 200% 200%; 
+                padding: 2px; 
+            }
+            .avatar-container:hover {
+                transform: scale(1.05); 
+                box-shadow: 0 0 30px rgba(14,165,233,0.5), 0 0 60px rgba(236,72,153,0.4);
+            }
+            .avatar-content {
+                @apply w-full h-full rounded-full overflow-hidden bg-gray-50 dark:bg-gray-900;
+            }
+            .avatar-image {
+                @apply w-full h-full object-cover;
+            }
+
+            /* Existing Admin Panel Styles - slightly adjusted for consistency */
+            .stat-card {
+              @apply bg-white/5 dark:bg-gray-800/5 backdrop-blur-sm p-4 md:p-6 rounded-xl shadow-lg border border-white/10 dark:border-gray-700/20 transition-all duration-300;
+            }
+            
+            .stat-card:hover {
+              @apply shadow-xl transform -translate-y-px; /* Subtle lift */
+            }
+            
+            .admin-table tbody tr:hover {
+              @apply bg-primary-500/10 dark:bg-primary-400/10; /* Consistent hover color */
+            }
+        }
+        @layer utilities {
+            .theme-transition-override * { 
+                @apply !duration-500; 
+            }
+        }
+        html { scroll-behavior: smooth; scroll-padding-top: 5rem; }
+        body { @apply text-gray-800 dark:text-gray-100 min-h-screen transition-all duration-500 ease-[cubic-bezier(0.68,-0.6,0.32,1.6)]; }
+        .hover-lift { @apply hover:-translate-y-1 hover:shadow-lg transition-transform duration-200; }
+
+        /* New Admin Dashboard Styles from prompt */
+        .admin-dashboard {
+          transition: all 0.3s ease;
+          position: relative;
+          z-index: 10;
+        }
+
+        /* .stat-card defined above, combined with previous */
+
+        .chart-placeholder {
+          background: linear-gradient(120deg, rgba(245, 245, 245, 0.1) 0%, rgba(245, 245, 245, 0.3) 100%);
+          border-radius: 0.5rem; /* Tailwind: rounded-lg */
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          height: 250px; /* Tailwind: h-64 approx */
+        }
+
+        .dark .chart-placeholder {
+          background: linear-gradient(120deg, rgba(30, 41, 59, 0.3) 0%, rgba(30, 41, 59, 0.5) 100%);
+        }
+
+        .message-preview {
+          transition: all 0.2s ease;
+          cursor: pointer;
+        }
+
+        .message-preview:hover {
+          background-color: rgba(14, 165, 233, 0.05); /* Tailwind: hover:bg-primary-500/5 */
+        }
+
+        .admin-settings-section {
+          max-width: 800px; /* Tailwind: max-w-4xl approx */
+          margin: 0 auto;
+        }
+
+        /* Animation for the action buttons */
+        .action-button { /* Can be applied to .btn-primary, .btn-secondary if desired for all */
+          position: relative;
+          overflow: hidden;
+        }
+
+        .action-button::after {
+          content: '';
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          width: 100%; /* or specific size */
+          height: 100%; /* or specific size */
+          background-color: currentColor; /* Or a specific ripple color */
+          border-radius: 50%;
+          transform: translate(-50%, -50%) scale(0);
+          opacity: 0.3;
+          transition: transform 0.3s;
+        }
+
+        .action-button:hover::after {
+          transform: translate(-50%, -50%) scale(1.5); /* Adjust scale for ripple size */
+        }
+
+        /* Custom scrollbar for tables */
+        .admin-table {
+          scrollbar-width: thin;
+          scrollbar-color: rgba(14, 165, 233, 0.5) transparent; /* primary-500 with alpha */
+        }
+
+        .admin-table::-webkit-scrollbar {
+          width: 6px;
+          height: 6px;
+        }
+
+        .admin-table::-webkit-scrollbar-track {
+          background: transparent;
+        }
+
+        .admin-table::-webkit-scrollbar-thumb {
+          background-color: rgba(14, 165, 233, 0.5); /* primary-500 with alpha */
+          border-radius: 20px; /* Tailwind: rounded-full */
+        }
+    </style>
+<script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@^19.1.0",
+    "react-dom/client": "https://esm.sh/react-dom@^19.1.0/client",
+    "react-dom": "https://esm.sh/react-dom@^19.1.0",
+    "react-dom/": "https://esm.sh/react-dom@^19.1.0/",
+    "react/": "https://esm.sh/react@^19.1.0/",
+    "jwt-decode": "https://esm.sh/jwt-decode@^4.0.0",
+    "styled-components": "https://esm.sh/styled-components@^6.1.11",
+    "vite": "https://esm.sh/vite@^6.3.5",
+    "path": "https://esm.sh/path@^0.12.7",
+    "url": "https://esm.sh/url@^0.11.4",
+    "react-router-dom": "https://esm.sh/react-router-dom@^6.25.1"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+<body>
+    <noscript>You need to enable JavaScript to run this app.</noscript>
     <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+    <script type="module" src="index.tsx"></script>
+<script type="module" src="/index.tsx"></script>
+</body>
 </html>
