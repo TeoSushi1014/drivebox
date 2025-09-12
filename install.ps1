@@ -313,25 +313,25 @@ try {
         if (-not $hasNet9) {
             Write-StatusMsg ".NET 9.0 Desktop Runtime not found, installing automatically..." "WARNING"
             
-            $dotnetUrl = "https://builds.dotnet.microsoft.com/dotnet/Sdk/9.0.304/dotnet-sdk-9.0.304-win-x64.exe"
-            $dotnetInstaller = Join-Path $env:TEMP "dotnet-9.0-sdk.exe"
+            $dotnetUrl = "https://builds.dotnet.microsoft.com/dotnet/WindowsDesktop/9.0.8/windowsdesktop-runtime-9.0.8-win-x64.exe"
+            $dotnetInstaller = Join-Path $env:TEMP "dotnet-9.0-runtime.exe"
             
             try {
-                Write-StatusMsg "Downloading .NET 9.0 SDK..." "INFO"
+                Write-StatusMsg "Downloading .NET 9.0 Desktop Runtime..." "INFO"
                 $webClient = New-Object System.Net.WebClient
                 $webClient.DownloadFile($dotnetUrl, $dotnetInstaller)
                 $webClient.Dispose()
                 
-                Write-StatusMsg "Installing .NET 9.0 SDK (this may take a few minutes)..." "INFO"
+                Write-StatusMsg "Installing .NET 9.0 Desktop Runtime (this may take a few minutes)..." "INFO"
                 $installProcess = Start-Process -FilePath $dotnetInstaller -ArgumentList "/quiet", "/norestart" -Wait -PassThru
                 
                 if ($installProcess.ExitCode -eq 0) {
-                    Write-StatusMsg ".NET 9.0 SDK installed successfully" "SUCCESS"
+                    Write-StatusMsg ".NET 9.0 Desktop Runtime installed successfully" "SUCCESS"
                     Remove-Item $dotnetInstaller -Force -ErrorAction SilentlyContinue
                 }
                 else {
                     Write-StatusMsg ".NET 9.0 installation failed with exit code: $($installProcess.ExitCode)" "ERROR"
-                    Write-StatusMsg "DriveBox may not run properly without .NET 9.0" "WARNING"
+                    Write-StatusMsg "DriveBox may not run properly without .NET 9.0 Desktop Runtime" "WARNING"
                 }
             }
             catch {
